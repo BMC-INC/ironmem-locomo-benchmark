@@ -1,0 +1,24 @@
+# Secrets — NEVER commit (public repo)
+.env
+*.key
+api_key
+
+# Dataset (downloaded by scripts/download_data.sh)
+/data/*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.uv/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Keep results committed for reproducibility, but ignore scratch runs
+/results/_scratch/
+*.pyc
