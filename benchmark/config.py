@@ -81,14 +81,20 @@ class Config:
     # When true, ask IronMem to LLM-rerank a wider candidate pool down to
     # retrieve_limit (server-side ?rerank=1). Off by default; opt in via --rerank.
     rerank: bool = False
+    # Optional candidate-pool override before reranking (server-side ?pool=).
+    # None leaves the server default (2×limit). Set via --pool for recall@25/@50.
+    pool: int | None = None
 
-    # Concurrency + retry/backoff
+    # Concurrency + retry/backoff. Gemini 2.5 Pro runs on dynamic shared quota,
+    # which throttles with 429s under sustained load — so we keep concurrency
+    # modest and give each call generous retry headroom (with jitter, see
+    # gemini.py) to ride out throttling instead of erroring the question.
     max_concurrency: int = 8
     ingest_concurrency: int = 3
-    max_retries: int = 6
+    max_retries: int = 10
     backoff_base: float = 1.6
-    backoff_cap: float = 30.0
-    request_timeout: float = 90.0
+    backoff_cap: float = 60.0
+    request_timeout: float = 120.0
 
     project_prefix: str = "/benchmark/locomo/"
 

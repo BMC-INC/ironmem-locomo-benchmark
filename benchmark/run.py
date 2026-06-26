@@ -281,6 +281,12 @@ def parse_args(argv=None) -> argparse.Namespace:
         action="store_true",
         help="enable IronMem server-side LLM reranking of retrieved candidates",
     )
+    p.add_argument(
+        "--pool",
+        type=int,
+        default=None,
+        help="candidate-pool size before rerank (server-side ?pool=); pair with --rerank for recall@25/@50",
+    )
     p.add_argument("--dataset-version", default="original", help="label only (original | refined)")
     return p.parse_args(argv)
 
@@ -293,6 +299,8 @@ def build_config(args) -> Config:
         cfg.max_concurrency = args.concurrency
     if args.retrieve_limit:
         cfg.retrieve_limit = args.retrieve_limit
+    if args.pool:
+        cfg.pool = args.pool
     if args.vertex_project:
         cfg.vertex_project = args.vertex_project
     if args.vertex_location:

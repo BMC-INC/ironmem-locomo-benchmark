@@ -14,6 +14,7 @@ type live in Config and are tunable from the CLI if needed.
 from __future__ import annotations
 
 import asyncio
+import random
 
 from google import genai
 from google.genai import errors as genai_errors
@@ -77,8 +78,94 @@ class GeminiClient:
             f"Gemini call to {model} failed after {self._cfg.max_retries} attempts: {last}"
         )
 
+    async def _call_with_retry(self, model: str, contents, config):
+        """generate_content with the same bounded retry/backoff as generate()."""
+        last: Exception | None = None
+        for attempt in range(self._cfg.max_retries):
+            try:
+                return await self._client.aio.models.generate_content(
+                    model=model, contents=contents, config=config
+                )
+            except genai_errors.APIError as exc:
+                if getattr(exc, "code", None) in _RETRYABLE:
+                    last = exc
+                    await self._sleep(attempt)
+                    continue
+                raise
+            except (asyncio.TimeoutError, ConnectionError) as exc:
+                last = exc
+                await self._sleep(attempt)
+                continue
+        raise RuntimeError(
+            f"Gemini agentic call to {model} failed after {self._cfg.max_retries} attempts: {last}"
+        )
+
+    async def generate_agentic(
+        self,
+        model: str,
+        *,
+        system_instruction: str,
+        user_text: str,
+        tool: "types.Tool",
+        tool_fns: dict,
+        max_output_tokens: int,
+        temperature: float = 0.0,
+        thinking_budget: int | None = None,
+        max_steps: int = 4,
+    ) -> tuple[str, int]:
+        """Run a tool-use loop: the model may call functions declared in `tool`;
+        `tool_fns` maps name -> async callable(args: dict) -> str. Returns
+        (final_text, n_tool_calls). On step exhaustion, forces a tool-less answer."""
+
+        def mk_config(with_tools: bool):
+            kw: dict = {
+                "temperature": temperature,
+                "max_output_tokens": max_output_tokens,
+                "system_instruction": system_instruction,
+            }
+            if thinking_budget is not None:
+                kw["thinking_config"] = types.ThinkingConfig(
+                    thinking_budget=thinking_budget, include_thoughts=False
+                )
+            if with_tools:
+                kw["tools"] = [tool]
+            return types.GenerateContentConfig(**kw)
+
+        contents = [types.Content(role="user", parts=[types.Part.from_text(text=user_text)])]
+        cfg_tools = mk_config(True)
+        n_calls = 0
+        for _step in range(max_steps):
+            resp = await self._call_with_retry(model, contents, cfg_tools)
+            cand = (resp.candidates or [None])[0]
+            content = getattr(cand, "content", None)
+            parts = getattr(content, "parts", None) or []
+            calls = [p.function_call for p in parts if getattr(p, "function_call", None)]
+            if not calls:
+                return _extract_text(resp), n_calls
+            contents.append(content)  # the model's function-call turn
+            out_parts = []
+            for fc in calls:
+                n_calls += 1
+                args = dict(fc.args) if fc.args else {}
+                fn = tool_fns.get(fc.name)
+                try:
+                    result = await fn(args) if fn else f"ERROR: unknown tool {fc.name}"
+                except Exception as exc:  # never let a tool error kill the answer
+                    result = f"ERROR: {exc}"
+                out_parts.append(
+                    types.Part.from_function_response(name=fc.name, response={"output": result})
+                )
+            contents.append(types.Content(role="user", parts=out_parts))
+        # Step budget exhausted — force a final answer with tools disabled.
+        resp = await self._call_with_retry(model, contents, mk_config(False))
+        return _extract_text(resp), n_calls
+
     async def _sleep(self, attempt: int) -> None:
-        delay = min(self._cfg.backoff_cap, self._cfg.backoff_base ** attempt)
+        # Equal jitter: a floor wait that grows with attempt, plus a random half.
+        # The jitter desynchronizes many concurrent retries so they don't slam
+        # the shared quota in lockstep (which is what caused mass 429 failures).
+        ceiling = min(self._cfg.backoff_cap, self._cfg.backoff_base ** attempt)
+        delay = ceiling / 2 + random.uniform(0, ceiling / 2)
         await asyncio.sleep(delay)
 
 

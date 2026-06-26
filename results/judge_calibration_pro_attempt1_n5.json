@@ -1,0 +1,20 @@
+{
+  "source": "upg2_hybrid_C_rerank_pool50.json",
+  "headline_judge": "gemini-2.5-flash",
+  "calibration_judge": "gemini-2.5-pro",
+  "calibration_location": "us-west1",
+  "calibration_concurrency": 2,
+  "requested_sample": 200,
+  "completed_n": 5,
+  "incomplete_due_to_capacity": 195,
+  "raw_agreement_pct": 100.0,
+  "cohens_kappa": 1.0,
+  "flash_accuracy_pct_on_sample": 40.0,
+  "pro_accuracy_pct_on_sample": 40.0,
+  "confusion": {
+    "both_correct": 2,
+    "flash1_pro0": 0,
+    "flash0_pro1": 0,
+    "both_wrong": 3
+  }
+}

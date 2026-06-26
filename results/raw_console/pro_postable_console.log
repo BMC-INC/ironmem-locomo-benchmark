@@ -1,0 +1,57 @@
+==================================================================
+[Wed Jun 24 23:01:36 PDT 2026] PRO postable run starting
+[Wed Jun 24 23:01:47 PDT 2026] Pro capacity check -> region: NONE
+[Wed Jun 24 23:01:47 PDT 2026] Pro still capacity-throttled (no region passed the burst gate) — skipping, staying armed for next trigger
+==================================================================
+[Thu Jun 25 08:30:42 PDT 2026] PRO postable run starting
+[Thu Jun 25 08:30:43 PDT 2026] IronMem server not responding on :37778 — aborting (will retry next fire)
+==================================================================
+[Thu Jun 25 12:37:31 PDT 2026] PRO postable run starting
+[Thu Jun 25 12:37:35 PDT 2026] Pro capacity check -> region: us-west1
+[Thu Jun 25 12:37:35 PDT 2026] PASS A' — Pro, rerank OFF (control)
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | answerer=gemini-2.5-pro 
+judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+strategies=['hybrid']
+server ok: 19718 memories, 47387 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━ 1986/1986 • 0:33:18 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    53.3% │                     841 │
+│ multi_hop   │    27.0% │                     282 │
+│ open_domain │    32.3% │                      96 │
+│ temporal    │    65.7% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    49.7% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg3_PRO_A_rerankoff.
+json
+[Thu Jun 25 13:10:55 PDT 2026] PASS A' exit=0
+[Thu Jun 25 13:10:55 PDT 2026] PASS C' — Pro, rerank ON pool 50 (headline / postable)
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | answerer=gemini-2.5-pro 
+judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+strategies=['hybrid']
+server ok: 19718 memories, 47387 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━ 1986/1986 • 0:48:37 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    66.6% │                     841 │
+│ multi_hop   │    41.5% │                     282 │
+│ open_domain │    40.6% │                      96 │
+│ temporal    │    69.2% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    60.9% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg3_PRO_C_rerank_poo
+l50.json
+[Thu Jun 25 13:59:37 PDT 2026] PASS C' exit=0
+[Thu Jun 25 13:59:38 PDT 2026] result check: OK
+[Thu Jun 25 13:59:38 PDT 2026] SUCCESS — marker set, launchd plist removed (one-shot complete)
+[Thu Jun 25 13:59:38 PDT 2026] PRO postable run finished

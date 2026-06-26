@@ -1,0 +1,21 @@
+IronMem LoCoMo — 1 conversation(s), 199 question(s) | answerer=gemini-2.5-flash 
+judge=gemini-2.5-flash | vertex=queueflow-sentinel/global | 
+strategies=['hybrid']
+server ok: 19632 memories, 47351 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━━━ 199/199 • 0:01:24 eta 0:00:00
+          LoCoMo — IronMem   judge-scored          
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                      n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    55.7% │                     70 │
+│ multi_hop   │    21.9% │                     32 │
+│ open_domain │    46.2% │                     13 │
+│ temporal    │    56.8% │                     37 │
+│ adversarial │        — │ 47  logged, not scored │
+│ overall     │    48.0% │               cats 1-4 │
+└─────────────┴──────────┴────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/valid_global_flash.js
+on
+VALID_EXIT=0

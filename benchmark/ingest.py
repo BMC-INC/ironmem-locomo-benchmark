@@ -17,7 +17,7 @@ import re
 from dataclasses import dataclass, field
 
 from .config import Config
-from .ironmem_client import IronMemClient
+from .ironmem_client import IronMemClient, IronMemError
 
 SESSION_RE = re.compile(r"^session_(\d+)$")
 
@@ -171,7 +171,20 @@ async def ingest_conversation(
                 project, session_id, tool="conversation", input_text=turn.as_line()
             )
 
-        await client.session_end(session_id)  # triggers compression
+        end = await client.session_end(session_id)  # triggers compression
+        # The upgraded server retries internally, so ok:false / a "no memory
+        # stored" skip is a TERMINAL ingest failure — not a silent pass. Surface
+        # it loudly so we never score against a conversation with a hole in it.
+        if not end.get("ok", False):
+            raise IronMemError(
+                f"compression failed for {project} [{session.key}]: "
+                f"{end.get('reason') or 'session/end returned ok:false'}"
+            )
+        if end.get("skipped") and end.get("memory_id") is None:
+            raise IronMemError(
+                f"compression stored no memory for {project} [{session.key}] "
+                f"(skipped={end.get('skipped')}, reason={end.get('reason')!r})"
+            )
 
         if extract_facts and gemini is not None:
             for fact in await extract_session_facts(gemini, cfg, session):

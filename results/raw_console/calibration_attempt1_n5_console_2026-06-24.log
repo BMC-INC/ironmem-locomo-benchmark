@@ -1,0 +1,11 @@
+
+=== BOUNDED PRO CALIBRATION (headline Flash vs Pro) ===
+  region            : us-west1  @concurrency 2
+  requested / done  : 200 / 5   (dropped 195 to capacity)
+  raw agreement     : 100.0%
+  Cohen's kappa     : 1.0
+  accuracy on sample— Flash:40.0%  Pro:40.0%
+  confusion         : both✓=2 flash✓/pro✗=0 flash✗/pro✓=0 both✗=3
+
+→ results/judge_calibration_pro.json
+CALIB_EXIT=0

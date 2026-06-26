@@ -1,0 +1,97 @@
+===== [19:20:36] PASS A: rerank OFF (skip-ingest, global, flash) =====
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/global | strategies=['hybrid']
+server ok: 19692 memories, 47365 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:13:48 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    45.2% │                     841 │
+│ multi_hop   │    22.3% │                     282 │
+│ open_domain │    26.0% │                      96 │
+│ temporal    │    42.7% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    39.3% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg2_hybrid_A_reranko
+ff.json
+===== [19:34:27] PASS B: rerank ON pool=25 =====
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/global | strategies=['hybrid']
+server ok: 19692 memories, 47365 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:28:09 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    57.0% │                     841 │
+│ multi_hop   │    34.8% │                     282 │
+│ open_domain │    37.5% │                      96 │
+│ temporal    │    48.6% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    49.9% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg2_hybrid_B_rerank_
+pool25.json
+===== [20:02:39] PASS C: rerank ON pool=50 =====
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/global | strategies=['hybrid']
+server ok: 19692 memories, 47365 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:28:01 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    61.2% │                     841 │
+│ multi_hop   │    39.7% │                     282 │
+│ open_domain │    38.5% │                      96 │
+│ temporal    │    54.5% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    54.5% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg2_hybrid_C_rerank_
+pool50.json
+===== [20:30:43] FUNNEL (all 10 convs, joined to C) =====
+  probed conv-26: 199 questions
+  probed conv-30: 105 questions
+  probed conv-41: 193 questions
+  probed conv-42: 260 questions
+  probed conv-43: 242 questions
+  probed conv-44: 158 questions
+  probed conv-47: 190 questions
+  probed conv-48: 239 questions
+  probed conv-49: 196 questions
+  probed conv-50: 204 questions
+
+=== RETRIEVAL FUNNEL (cats 1-4) ===
+questions: 1540
+  gold_in_transcript      93.8%  (1445)
+  gold_in_memory          72.3%  (1114)
+  in_pool_25              77.0%  (1186)
+  in_pool_50              84.5%  (1302)
+  reranker_kept           72.6%  (1118)
+  conditional retention:
+    compression_kept_given_in_transcript        76.9%
+    pool50_kept_given_in_memory                 95.7%
+    rerank_kept_given_in_pool50                 85.4%
+  leaks (absolute questions lost at each hop):
+    transcript_to_memory_lost        334
+    memory_to_pool50_lost            48
+    pool50_to_reranked_lost          155
+  answerer accuracy (joined): 54.5%  (839/1540)
+
+→ /Users/kingjames/Projects/ironmem-locomo-benchmark/results/funnel_hybrid.json
+===== [20:53:38] JUDGE CALIBRATION (Pro re-judges a 200-q sample of C, low concurrency) =====
+/private/tmp/claude-501/-Users-kingjames/7687c95a-1889-477b-aa6c-451cd2de61a4/scratchpad/run_clean_sweep.sh: line 38: 74745 Terminated: 15          GOOGLE_CLOUD_LOCATION=global $PY scripts/judge_agreement.py results/upg2_hybrid_C_rerank_pool50.json --judge-model gemini-2.5-pro --sample 200 --concurrency 2 --output judge_calibration_pro.json
+calibration non-zero (143)
+===== [22:08:29] CLEAN SWEEP COMPLETE =====

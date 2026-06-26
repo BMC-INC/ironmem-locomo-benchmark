@@ -98,14 +98,28 @@ class IronMemClient:
     async def session_end(self, session_id: str) -> dict:
         return await self._request("POST", "/session/end", json={"session_id": session_id})
 
-    async def get_context(self, project: str, query: str, limit: int | None = None) -> list[dict]:
-        params = {
+    async def get_context(
+        self,
+        project: str,
+        query: str,
+        limit: int | None = None,
+        *,
+        rerank: bool | None = None,
+        pool: int | None = None,
+    ) -> list[dict]:
+        """Hybrid retrieval. Per-call `rerank`/`pool` override the config defaults
+        so the funnel probe can sweep limit/pool/rerank without mutating cfg."""
+        params: dict = {
             "project": project,
             "query": query,
             "limit": limit or self._cfg.retrieve_limit,
         }
-        if self._cfg.rerank:
+        use_rerank = self._cfg.rerank if rerank is None else rerank
+        if use_rerank:
             params["rerank"] = "1"
+        use_pool = self._cfg.pool if pool is None else pool
+        if use_pool:
+            params["pool"] = use_pool
         r = await self._request("GET", "/context", params=params)
         return r.get("memories", [])
 
@@ -121,3 +135,46 @@ class IronMemClient:
         if tags:
             body["tags"] = tags
         return await self._request("POST", "/remember", json=body)
+
+    async def get_context_full(
+        self,
+        project: str,
+        query: str,
+        limit: int | None = None,
+        *,
+        rerank: bool | None = None,
+        pool: int | None = None,
+    ) -> dict:
+        """Like get_context but returns the FULL /context response, including
+        `expansions` (per-memory chunks with chunk_id handles). Track A's agentic
+        answerer needs those chunk_ids to call /retrieve_original."""
+        params: dict = {
+            "project": project,
+            "query": query,
+            "limit": limit or self._cfg.retrieve_limit,
+        }
+        use_rerank = self._cfg.rerank if rerank is None else rerank
+        if use_rerank:
+            params["rerank"] = "1"
+        use_pool = self._cfg.pool if pool is None else pool
+        if use_pool:
+            params["pool"] = use_pool
+        return await self._request("GET", "/context", params=params)
+
+    async def retrieve_original(
+        self,
+        *,
+        chunk_id: str | None = None,
+        memory_id: int | None = None,
+        observation_id: int | None = None,
+    ) -> dict:
+        """Pull back the verbatim, uncompressed original behind a chunk_id (CCR).
+        Returns {original, bytes, source_start, source_end, ...}."""
+        body: dict = {}
+        if chunk_id is not None:
+            body["chunk_id"] = chunk_id
+        if memory_id is not None:
+            body["memory_id"] = memory_id
+        if observation_id is not None:
+            body["observation_id"] = observation_id
+        return await self._request("POST", "/retrieve_original", json=body)
