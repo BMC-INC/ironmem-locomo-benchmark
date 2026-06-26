@@ -75,6 +75,9 @@ class Config:
     judge_thinking_budget: int = 128
     fact_max_tokens: int = 3072
     fact_thinking_budget: int = 1024
+    # Query expansion (multi-query): a short JSON list of rephrasings, so cheap.
+    expand_max_tokens: int = 512
+    expand_thinking_budget: int = 256
 
     # Retrieval
     retrieve_limit: int = 10
@@ -84,6 +87,13 @@ class Config:
     # Optional candidate-pool override before reranking (server-side ?pool=).
     # None leaves the server default (2×limit). Set via --pool for recall@25/@50.
     pool: int | None = None
+    # Multi-query expansion: when > 0, expand the question into this many variant
+    # queries, retrieve per-variant, then RRF-fuse harness-side. 0 = OFF (single query).
+    multi_query: int = 0
+    # Governed retrieval router: when True, classify each question by a heuristic on
+    # its TEXT (never the gold category) and pick per-question retrieval params from
+    # the routing table in query.py. False = OFF (behavior unchanged).
+    route: bool = False
 
     # Concurrency + retry/backoff. Gemini 2.5 Pro runs on dynamic shared quota,
     # which throttles with 429s under sustained load — so we keep concurrency

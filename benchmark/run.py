@@ -287,6 +287,17 @@ def parse_args(argv=None) -> argparse.Namespace:
         default=None,
         help="candidate-pool size before rerank (server-side ?pool=); pair with --rerank for recall@25/@50",
     )
+    p.add_argument(
+        "--multi-query",
+        type=int,
+        default=0,
+        help="expand the question into N variant queries and RRF-fuse per-variant retrieval (0 = off)",
+    )
+    p.add_argument(
+        "--route",
+        action="store_true",
+        help="governed retrieval router: classify each question by text and pick per-question params",
+    )
     p.add_argument("--dataset-version", default="original", help="label only (original | refined)")
     return p.parse_args(argv)
 
@@ -301,6 +312,9 @@ def build_config(args) -> Config:
         cfg.retrieve_limit = args.retrieve_limit
     if args.pool:
         cfg.pool = args.pool
+    if args.multi_query:
+        cfg.multi_query = args.multi_query
+    cfg.route = args.route
     if args.vertex_project:
         cfg.vertex_project = args.vertex_project
     if args.vertex_location:
