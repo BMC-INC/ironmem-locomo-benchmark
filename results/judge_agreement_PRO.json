@@ -1,0 +1,16 @@
+{
+  "source": "/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg6_PRO_p100_k25.json",
+  "headline_judge": "gemini-2.5-pro",
+  "second_judge": "gemini-2.5-flash",
+  "sample_n": 200,
+  "raw_agreement_pct": 91.0,
+  "cohens_kappa": 0.8024,
+  "pro_accuracy_pct_on_sample": 66.5,
+  "second_accuracy_pct_on_sample": 63.5,
+  "confusion": {
+    "both_correct": 121,
+    "pro1_second0": 12,
+    "pro0_second1": 6,
+    "both_wrong": 61
+  }
+}

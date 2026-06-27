@@ -1,0 +1,184 @@
+==================================================================
+[Fri Jun 26 12:23:01 PDT 2026] coverage-score 2x2 (pool x retrieve-limit) run starting (HI=25)
+[Fri Jun 26 12:23:01 PDT 2026] PASS A control (= prior 54.5%): pool=50 retrieve-limit=10 -> upg5_cov_p50_l10.json
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 28311 memories, 59735 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:19:28 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │     0.0% │                     841 │
+│ multi_hop   │     0.0% │                     282 │
+│ open_domain │     0.0% │                      96 │
+│ temporal    │     0.0% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │     0.0% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+⚠ 1986 question(s) errored. See per_question[].error
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg5_cov_p50_l10.json
+[Fri Jun 26 12:42:33 PDT 2026] A control (= prior 54.5%) exit=0
+[Fri Jun 26 12:42:33 PDT 2026] PASS B wider-pool-only: pool=100 retrieve-limit=10 -> upg5_cov_p100_l10.json
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 28311 memories, 59738 observations | embedder: bge-small-en-v1.5 (dim
+384)
+==================================================================
+[Fri Jun 26 12:46:11 PDT 2026] coverage-score 2x2 (pool x retrieve-limit) run starting (HI=25)
+[Fri Jun 26 12:46:11 PDT 2026] PASS A control (= prior 54.5%): pool=50 retrieve-limit=10 -> upg5_cov_p50_l10.json
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 28311 memories, 59738 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:30:58 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    63.5% │                     841 │
+│ multi_hop   │    32.6% │                     282 │
+│ open_domain │    29.2% │                      96 │
+│ temporal    │    58.6% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    54.7% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg5_cov_p50_l10.json
+[Fri Jun 26 13:17:12 PDT 2026] A control (= prior 54.5%) exit=0
+[Fri Jun 26 13:17:12 PDT 2026] PASS B wider-pool-only: pool=100 retrieve-limit=10 -> upg5_cov_p100_l10.json
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 28311 memories, 59738 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:34:21 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    67.2% │                     841 │
+│ multi_hop   │    39.0% │                     282 │
+│ open_domain │    36.5% │                      96 │
+│ temporal    │    62.3% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    59.1% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg5_cov_p100_l10.jso
+n
+[Fri Jun 26 13:51:37 PDT 2026] B wider-pool-only exit=0
+[Fri Jun 26 13:51:37 PDT 2026] PASS C bigger-topk-only (the lever): pool=50 retrieve-limit=25 -> upg5_cov_p50_l25.json
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 28311 memories, 59738 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:37:39 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    68.5% │                     841 │
+│ multi_hop   │    40.1% │                     282 │
+│ open_domain │    38.5% │                      96 │
+│ temporal    │    67.3% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    61.2% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+⚠ 1 question(s) errored. See per_question[].error
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg5_cov_p50_l25.json
+[Fri Jun 26 14:29:19 PDT 2026] C bigger-topk-only (the lever) exit=0
+[Fri Jun 26 14:29:19 PDT 2026] PASS D both: pool=100 retrieve-limit=25 -> upg5_cov_p100_l25.json
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 28311 memories, 59738 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:29:53 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    71.3% │                     841 │
+│ multi_hop   │    40.1% │                     282 │
+│ open_domain │    40.6% │                      96 │
+│ temporal    │    69.2% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    63.2% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg5_cov_p100_l25.jso
+n
+[Fri Jun 26 14:59:16 PDT 2026] D both exit=0
+[Fri Jun 26 14:59:16 PDT 2026] funnel A-corner: pool50 final-limit10 store-limit2000
+  probed conv-26: 199 questions
+  probed conv-30: 105 questions
+  probed conv-41: 193 questions
+  probed conv-42: 260 questions
+  probed conv-43: 242 questions
+  probed conv-44: 158 questions
+  probed conv-47: 190 questions
+  probed conv-48: 239 questions
+  probed conv-49: 196 questions
+  probed conv-50: 204 questions
+
+=== RETRIEVAL FUNNEL (cats 1-4) ===
+questions: 1540
+  gold_in_transcript      93.8%  (1445)
+  gold_in_memory          92.0%  (1417)
+  in_pool_25              79.2%  (1219)
+  in_pool_50              86.0%  (1324)
+  reranker_kept           74.9%  (1154)
+  conditional retention:
+    compression_kept_given_in_transcript        97.0%
+    pool50_kept_given_in_memory                 92.9%
+    rerank_kept_given_in_pool50                 87.1%
+  leaks (absolute questions lost at each hop):
+    transcript_to_memory_lost        44
+    memory_to_pool50_lost            100
+    pool50_to_reranked_lost          168
+  answerer accuracy (joined): 54.7%  (842/1540)
+
+→ /Users/kingjames/Projects/ironmem-locomo-benchmark/results/funnel_cov_p50_l10.json
+[Fri Jun 26 15:28:15 PDT 2026] funnel A exit=0
+[Fri Jun 26 15:28:15 PDT 2026] funnel D-corner: pool100 final-limit25 store-limit2000
+  probed conv-26: 199 questions
+  probed conv-30: 105 questions
+  probed conv-41: 193 questions
+  probed conv-42: 260 questions
+  probed conv-43: 242 questions
+  probed conv-44: 158 questions
+  probed conv-47: 190 questions
+  probed conv-48: 239 questions
+  probed conv-49: 196 questions
+  probed conv-50: 204 questions
+
+=== RETRIEVAL FUNNEL (cats 1-4) ===
+questions: 1540
+  gold_in_transcript      93.8%  (1445)
+  gold_in_memory          92.0%  (1417)
+  in_pool_25              79.2%  (1219)
+  in_pool_50              86.0%  (1324)
+  reranker_kept           83.4%  (1284)
+  conditional retention:
+    compression_kept_given_in_transcript        97.0%
+    pool50_kept_given_in_memory                 92.9%
+    rerank_kept_given_in_pool50                 95.5%
+  leaks (absolute questions lost at each hop):
+    transcript_to_memory_lost        44
+    memory_to_pool50_lost            100
+    pool50_to_reranked_lost          59
+  answerer accuracy (joined): 63.2%  (974/1540)
+
+→ /Users/kingjames/Projects/ironmem-locomo-benchmark/results/funnel_cov_p100_l25.json
+[Fri Jun 26 16:04:11 PDT 2026] funnel D exit=0
+[Fri Jun 26 16:04:12 PDT 2026] result check: NOTYET results/upg5_cov_p50_l10.json=0 results/upg5_cov_p100_l10.json=0 results/upg5_cov_p50_l25.json=1 results/upg5_cov_p100_l25.json=0
+[Fri Jun 26 16:04:12 PDT 2026] not clean — leaving job armed to retry on next fire
+[Fri Jun 26 16:04:12 PDT 2026] coverage-score run finished

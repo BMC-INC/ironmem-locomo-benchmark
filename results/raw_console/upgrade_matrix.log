@@ -1,0 +1,66 @@
+==================================================================
+[Thu Jun 25 20:18:42 PDT 2026] upgrade matrix starting
+[Thu Jun 25 20:18:42 PDT 2026] snapshot mem.db -> mem.db.bak-pre-synthesis
+[Thu Jun 25 20:18:43 PDT 2026] running synthesis --apply
+Synthesis APPLY | 10 projects | max_groups=150
+  /benchmark/locomo/conv-26__hybrid: scanned=1511 groups=150 derived=211 reinforced=483
+  /benchmark/locomo/conv-30__hybrid: scanned=1310 groups=150 derived=209 reinforced=411
+  /benchmark/locomo/conv-41__hybrid: scanned=2000 groups=150 derived=194 reinforced=421
+  /benchmark/locomo/conv-42__hybrid: scanned=1838 groups=150 derived=156 reinforced=369
+  /benchmark/locomo/conv-43__hybrid: scanned=2000 groups=150 derived=188 reinforced=398
+  /benchmark/locomo/conv-44__hybrid: scanned=1891 groups=150 derived=216 reinforced=471
+  /benchmark/locomo/conv-47__hybrid: scanned=2000 groups=150 derived=205 reinforced=458
+  /benchmark/locomo/conv-48__hybrid: scanned=2000 groups=150 derived=163 reinforced=393
+  /benchmark/locomo/conv-49__hybrid: scanned=1570 groups=150 derived=213 reinforced=454
+  /benchmark/locomo/conv-50__hybrid: scanned=2000 groups=150 derived=216 reinforced=488
+
+TOTAL (APPLIED): {'scanned': 18120, 'groups': 1500, 'derived': 1971, 'sources_reinforced': 4346}
+[Thu Jun 25 21:31:28 PDT 2026] synthesis done
+[Thu Jun 25 21:31:28 PDT 2026] SCORE upg6_B_synth : --retrieve-limit 10
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 28311 memories, 59725 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:29:07 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    63.5% │                     841 │
+│ multi_hop   │    33.7% │                     282 │
+│ open_domain │    29.2% │                      96 │
+│ temporal    │    59.8% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    55.1% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg6_B_synth.json
+[Thu Jun 25 22:00:38 PDT 2026] upg6_B_synth exit=0
+[Thu Jun 25 22:00:38 PDT 2026] SCORE upg6_C_synth_mq3 : --retrieve-limit 10 --multi-query 3
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 28311 memories, 59725 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 1:07:27 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    63.1% │                     841 │
+│ multi_hop   │    34.0% │                     282 │
+│ open_domain │    32.3% │                      96 │
+│ temporal    │    65.4% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    56.4% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg6_C_synth_mq3.json
+[Thu Jun 25 23:08:08 PDT 2026] upg6_C_synth_mq3 exit=0
+[Thu Jun 25 23:08:09 PDT 2026] SCORE upg6_D_synth_route : --retrieve-limit 10 --route
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
+answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 28311 memories, 59725 observations | embedder: bge-small-en-v1.5 (dim
+384)

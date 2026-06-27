@@ -1,0 +1,66 @@
+launching at Sat Jun 27 13:11:26 PDT 2026
+=== [1/3] HEADLINE: Pro answerer + Pro judge, hybrid, rerank pool100 / retrieve-limit 25 ===
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | answerer=gemini-2.5-pro 
+judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+strategies=['hybrid']
+server ok: 28554 memories, 59859 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━ 1986/1986 • 1:09:49 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    69.9% │                     841 │
+│ multi_hop   │    47.2% │                     282 │
+│ open_domain │    43.8% │                      96 │
+│ temporal    │    78.5% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    65.9% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg6_PRO_p100_k25.jso
+n
+=== [2/3] FUNNEL: retrieval leak attribution (store-limit 2000 per gotcha) ===
+  probed conv-26: 199 questions
+  probed conv-30: 105 questions
+  probed conv-41: 193 questions
+  probed conv-42: 260 questions
+  probed conv-43: 242 questions
+  probed conv-44: 158 questions
+  probed conv-47: 190 questions
+  probed conv-48: 239 questions
+  probed conv-49: 196 questions
+  probed conv-50: 204 questions
+
+=== RETRIEVAL FUNNEL (cats 1-4) ===
+questions: 1540
+  gold_in_transcript      93.8%  (1445)
+  gold_in_memory          92.0%  (1417)
+  in_pool_25              78.3%  (1206)
+  in_pool_50              85.3%  (1313)
+  reranker_kept           82.9%  (1276)
+  conditional retention:
+    compression_kept_given_in_transcript        97.0%
+    pool50_kept_given_in_memory                 91.9%
+    rerank_kept_given_in_pool50                 94.4%
+  leaks (absolute questions lost at each hop):
+    transcript_to_memory_lost        44
+    memory_to_pool50_lost            113
+    pool50_to_reranked_lost          72
+  answerer accuracy (joined): 65.9%  (1015/1540)
+
+→ /Users/kingjames/Projects/ironmem-locomo-benchmark/results/funnel_PRO_p100_k25.json
+=== [3/3] JUDGE AGREEMENT: Flash 2nd judge (raw % + Cohen's kappa), n=200 ===
+
+=== JUDGE AGREEMENT (headline Pro vs second judge) ===
+  source        : upg6_PRO_p100_k25.json
+  second judge  : gemini-2.5-flash
+  sample n      : 200
+  raw agreement : 91.0%
+  Cohen's kappa : 0.8024
+  accuracy on sample — Pro: 66.5%  |  gemini-2.5-flash: 63.5%
+  confusion     : both✓=121  pro✓/2nd✗=12  pro✗/2nd✓=6  both✗=61
+
+→ /Users/kingjames/Projects/ironmem-locomo-benchmark/results/judge_agreement_PRO.json
+=== DONE ===
+EXIT CODE: 0
