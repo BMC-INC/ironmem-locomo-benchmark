@@ -2,7 +2,43 @@
 *Snapshot: 2026-06-27 ~15:30 PDT — **NEW Pro-judged headline 65.9%** on the fully-built stack (entire ROADMAP_TO_70 shipped incl. Wave 4 cross-encoder). Read the 2026-06-27 section directly below first; the 2026-06-25 section under it is detailed background; everything under "ARCHIVE" is older.*
 
 ---
-# ⏯️ RESUME HERE — 2026-06-27 (supersedes all sections below)
+# ⏯️ RESUME HERE — 2026-06-27 NIGHT (live state — read this first)
+
+**⏳ THERE IS AN OVERNIGHT RUN IN FLIGHT.** A caffeinated off-peak launcher (background task `bwa47lkyc`, started ~21:53 PDT) is armed to fire the **combined `--answer-prompt v3 --synthesize` Pro validation run**. It sleeps until **23:20 PDT**, then GATES on a live `gemini-2.5-pro`/us-west1 probe (re-probes every 6 min) so it only launches once the 19:00–23:00 evening DSQ throttle clears, then runs ~2–2.5h (synthesis triples the LLM calls). **Expected done ~01:30–02:30 PDT.** Risk: `caffeinate -i -s` only holds on **AC power** — if the Mac was on battery / lid closed it may have slept through the window (the 04:30-job sleep gotcha). 
+
+**ON RESUME — first check whether the overnight run finished:**
+- `tail -40 results/raw_console/final_v3syn_console.log` (look for the score table + `EXIT CODE`).
+- `ls -la results/upg9_PRO_p100_k25_v3syn.json results/judge_agreement_PRO_v3syn.json`.
+- If MISSING / launcher slept: just re-run it off-peak (or now if Pro probe is OK). Canonical command (scratchpad scripts are session-temp and may be gone):
+  ```bash
+  cd ~/Projects/ironmem-locomo-benchmark; P=.venv/bin/python
+  $P -m benchmark.run --strategy hybrid --skip-ingest --rerank --pool 100 --retrieve-limit 25 \
+     --answer-prompt v3 --synthesize --vertex-location us-west1 --concurrency 8 \
+     --output upg9_PRO_p100_k25_v3syn.json          # run in background; ~2.5h
+  $P scripts/judge_agreement.py results/upg9_PRO_p100_k25_v3syn.json \
+     --judge-model gemini-2.5-flash --sample 200 --output judge_agreement_PRO_v3syn.json
+  ```
+  Pre-flight: re-auth ADC if stale (`gcloud auth application-default print-access-token` should start `ya29.`; token from this session good until ~12:51 PDT 2026-06-28). ALWAYS canary 1 conv (`--dry-run --conv-index 0`) first; verify `error_count` 0.
+
+**WHEN upg9 EXISTS — the analysis (vs the V2 65.9% baseline `results/upg8_PRO_p100_k25_v2.json`):**
+1. Verify `error_count` 0 (trust gate — a throttled run can taint with 429s; that is why the run is off-peak).
+2. Per-category vs V2: target **multi_hop 50.4 → 55-60%**; overall target ~67-68%. Use the rescue/regression diff (join by `question_id`, compare `score`).
+3. **Regression guard (the "without loss" rule):** if single_hop/temporal dropped, the fix is to GATE synthesis to multi_hop only via the existing `classify_question` router (`benchmark/query.py`, `cfg.route` machinery) rather than applying it uniformly — then re-run.
+4. Flash 2nd-judge κ from `judge_agreement_PRO_v3syn.json` (V1 was 0.80, V2 0.88) — confirm any gain is real, not Pro self-preference.
+5. Sanity already banked at canary: synthesis uses **brief + raw passages** (commit `1700649`) so fact-loss is 0% (brief-only dropped ~10.5% of gold). `synthesize_context` in `query.py`.
+
+**Methodology / lever map (settled this session):**
+- **Answer prompt = a MAXED, lateral lever.** V2 = net 0 overall (114 rescued / 114 regressed); it only redistributes points (multi_hop +3.2, open_domain +2.0, paid by temporal −2.5). Do not expect more from prompt edits.
+- **Synthesis answerer = the real multi_hop lever** (validating overnight). 70% of multi_hop failures are gold-PRESENT-but-uncombined (answerer-side, not retrieval) — proven by the failure classification of the 65.9% headline.
+- **open_domain** is extraction-capped (only 62.5% of its gold is in-transcript, 50% extracted); small (n=96); low priority.
+- **Wave 4 cross-encoder** = a SEPARATE retrieval-recall lever (committed `48487d1` on origin/main, CPU-only → needs GPU). Recall curve (`scripts/pool_curve.py`, now swept to N=200) showed pool **150** is the recall sweet spot (raw recall 73.2%@100 → 83.9%@150, flat at 200); a wider pool + the cheap cross-encoder is the retrieval path. Independent of the synthesis work.
+
+**Benchmark-repo commits this session (local-only, no remote, all pushed-N/A):** `3f4e5b2` (Pro 65.9 headline + funnel + judge) → `27f32a1` (V2 prompt + final test) → `dd5b980` (v3 date carve-out) → `b477071` (synthesis build + spec) → `1700649` (synthesis brief+raw fix). Tree CLEAN. Server repo `Iron-mem-fix` synced to origin/main `48487d1`.
+
+**Ops gotchas:** Pro is DSQ-throttled **19:00–23:00 PDT in us-west1** (Flash fine everywhere — probe at 21:50 confirmed Pro 429, Flash OK 1.5s) → run Pro off-peak only. `--vertex-location us-west1` is REQUIRED for Pro (default us-central1 also throttles). ADC ~24h, no SA-key fallback. The system `timeout`/`gtimeout` binaries are NOT installed on this Mac (don't wrap probes in them). Foreground Bash calls cap ~2 min and synthesis canaries exceed that → run canaries in the background.
+
+---
+# ⏯️ RESUME HERE — 2026-06-27 (earlier; superseded by NIGHT above)
 
 **LATEST (2026-06-27 eve):** Headline is now reported as **V2 (65.9%, `--answer-prompt v2`, `results/upg8_PRO_p100_k25_v2.json`)** — same overall as V1 but better-shaped (multi_hop **50.4%** vs 47.2, open_domain 45.8 vs 43.8) and higher agreement (**κ=0.88**, 94.5% raw). The V2 answer-prompt experiment proved the **answer prompt is a maxed/lateral lever** (net 0 overall, 114 rescued / 114 regressed; see `RUN_NOTE_2026-06-27_v2_answer_prompt.md`). **Two levers built and committed locally, awaiting ONE combined validation run:** (1) `--answer-prompt v3` = v2 + date-abstention carve-out (`dd5b980`, fixes the commit-to-inference-guesses-a-date temporal regressions; UNVALIDATED — conv-0 can't test it); (2) `--synthesize` synthesis answerer (`SYNTHESIS_ANSWERER_SPEC.md`) — merges retrieved hops into a consolidated brief before the answer model, the real multi_hop lever (70% of multi_hop failures are gold-present-but-uncombined). **NEXT ACTION: canary then run `--answer-prompt v3 --synthesize` (Pro p100/k25, us-west1) vs the V2 65.9% baseline; target multi_hop 50→55-60%, overall ~67-68%, with per-category regression check (gate synthesis to multi_hop via classify_question if single_hop/temporal drop).** The cross-encoder (below) remains a separate, GPU-gated lever.
 
