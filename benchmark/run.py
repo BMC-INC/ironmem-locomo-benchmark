@@ -226,6 +226,11 @@ def write_output(strategy, results, counts, rows, cfg, args) -> Path:
     if args.output:
         path = Path(args.output)
         if not path.is_absolute():
+            # Tolerate an accidental leading "results/" (we add it below), so
+            # both "X.json" and "results/X.json" resolve to results/X.json
+            # instead of results/results/X.json.
+            if path.parts and path.parts[0] == results_dir.name:
+                path = Path(*path.parts[1:])
             path = results_dir / path
     else:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
