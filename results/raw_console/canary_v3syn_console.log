@@ -1,0 +1,21 @@
+canary v3+syn launched Sat Jun 27 18:26:05 PDT 2026
+IronMem LoCoMo — 1 conversation(s), 199 question(s) | answerer=gemini-2.5-pro 
+judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+strategies=['hybrid']
+server ok: 28554 memories, 59859 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━━━ 199/199 • 0:10:03 eta 0:00:00
+          LoCoMo — IronMem   judge-scored          
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                      n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    65.7% │                     70 │
+│ multi_hop   │    46.9% │                     32 │
+│ open_domain │    84.6% │                     13 │
+│ temporal    │    75.7% │                     37 │
+│ adversarial │        — │ 47  logged, not scored │
+│ overall     │    65.8% │               cats 1-4 │
+└─────────────┴──────────┴────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/canary_PRO_v3syn.json
+EXIT: 0

@@ -148,7 +148,17 @@ async def synthesize_context(
         max_output_tokens=cfg.answerer_max_tokens,
         thinking_budget=cfg.answerer_thinking_budget,
     )
-    return (brief or "").strip() or context_text
+    brief = (brief or "").strip()
+    if not brief:
+        return context_text
+    # Brief + raw passages: the brief chains the hops, the raw passages guarantee
+    # no fact-loss (synthesis-only dropped ~10% of gold in the conv-0 canary).
+    return (
+        "CONSOLIDATED BRIEF (relevant facts, with connections made explicit):\n"
+        f"{brief}\n\n"
+        "RAW PASSAGES (for any detail not captured above):\n"
+        f"{context_text}"
+    )
 
 
 async def answer_question(gemini: GeminiClient, cfg: Config, question: str, context_text: str) -> str:
