@@ -270,8 +270,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--strategy", choices=["session", "hybrid", "both"], default="session")
     p.add_argument("--answerer-model", default=DEFAULT_ANSWERER_MODEL)
     p.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL)
-    p.add_argument("--answer-prompt", choices=["v1", "v2"], default="v1",
-                   help="answerer prompt: v1=original, v2=failure-targeted")
+    p.add_argument("--answer-prompt", choices=["v1", "v2", "v3"], default="v1",
+                   help="answerer prompt: v1=original, v2=completeness, v3=v2+date-abstention")
     p.add_argument("--vertex-project", default=None, help="override GCP project for Vertex AI")
     p.add_argument("--vertex-location", default=None, help="override Vertex AI region")
     p.add_argument("--include-adversarial", action="store_true", help="count category 5 in overall")
