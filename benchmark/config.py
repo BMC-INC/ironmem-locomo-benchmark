@@ -66,6 +66,9 @@ class Config:
     vertex_location: str = field(default_factory=lambda: DEFAULT_VERTEX_LOCATION)
     answerer_model: str = DEFAULT_ANSWERER_MODEL
     judge_model: str = DEFAULT_JUDGE_MODEL
+    # Answerer prompt version: "v1" = original, "v2" = failure-targeted
+    # (exhaustive list aggregation, no-preamble brevity, commit-to-inference).
+    answer_prompt_version: str = "v1"
 
     # Per-call token budgets. Gemini 2.5 Pro always "thinks", so max_output_tokens
     # leaves headroom for thinking tokens on top of the visible answer.

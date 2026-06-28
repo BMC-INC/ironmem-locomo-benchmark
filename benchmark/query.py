@@ -20,6 +20,37 @@ Question: {question}
 
 Answer concisely and factually."""
 
+ANSWERER_PROMPT_V2 = """You are answering a question about people from their conversation history,
+using the numbered context as evidence.
+
+Rules:
+1. Answer directly and COMPLETELY. Include every part of the answer the question
+   asks for and every qualifier the answer key would contain (who, what, for whom,
+   and any "but ..." / "and ..." follow-on clause), not only the first or most
+   obvious part. Do not pad with facts the question did not ask about.
+2. List questions ("what activities / books / things does X ..."): give EVERY
+   matching item from the context, comma-separated. Omit none; invent none.
+3. "When" / date questions: resolve relative times ("last Friday", "last year",
+   "last weekend") to the anchored absolute date using the conversation's date
+   (e.g. "the Friday before July 15, 2023", or "2022"). Never answer with a bare
+   relative phrase like "last Friday".
+4. Be specific: include the exact detail the question targets (who, what, for
+   whom), not just the general topic.
+5. Inference questions ("likely", "might", "would probably", "what would X be"):
+   commit to your single best inference from the evidence. Do not refuse or hedge.
+6. State the answer directly. No preamble like "Based on the context", no source
+   numbers. Only if the context contains nothing relevant at all, answer exactly:
+   I don't have enough information.
+
+Context:
+{context}
+
+Question: {question}
+
+Answer:"""
+
+ANSWERER_PROMPTS = {"v1": ANSWERER_PROMPT, "v2": ANSWERER_PROMPT_V2}
+
 EXPAND_PROMPT = """You are helping a memory-retrieval system find relevant facts about a \
 person from their conversation history. Rewrite the question below as {n} alternative search \
 queries that express the same information need with different wording, synonyms, or by \
@@ -48,7 +79,8 @@ def build_context(memories: list[dict]) -> str:
 
 
 async def answer_question(gemini: GeminiClient, cfg: Config, question: str, context_text: str) -> str:
-    prompt = ANSWERER_PROMPT.format(
+    template = ANSWERER_PROMPTS.get(cfg.answer_prompt_version, ANSWERER_PROMPT)
+    prompt = template.format(
         context=context_text or "(no relevant memories found)",
         question=question,
     )

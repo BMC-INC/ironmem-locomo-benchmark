@@ -1,0 +1,36 @@
+launching V2 final at Sat Jun 27 16:32:15 PDT 2026
+=== [1/2] FINAL: Pro p100/k25, answer-prompt v2 (full 1986 q) ===
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) | answerer=gemini-2.5-pro 
+judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+strategies=['hybrid']
+server ok: 28554 memories, 59859 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━ 1986/1986 • 1:15:16 eta 0:00:00
+          LoCoMo — IronMem   judge-scored           
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃                       n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ single_hop  │    69.6% │                     841 │
+│ multi_hop   │    50.3% │                     282 │
+│ open_domain │    45.8% │                      96 │
+│ temporal    │    76.0% │                     321 │
+│ adversarial │        — │ 446  logged, not scored │
+│ overall     │    65.9% │                cats 1-4 │
+└─────────────┴──────────┴─────────────────────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg8_PRO_p100_k25_v2.
+json
+=== [2/2] JUDGE AGREEMENT: Flash 2nd judge, n=200 ===
+
+=== JUDGE AGREEMENT (headline Pro vs second judge) ===
+  source        : upg8_PRO_p100_k25_v2.json
+  second judge  : gemini-2.5-flash
+  sample n      : 200
+  raw agreement : 94.5%
+  Cohen's kappa : 0.8824
+  accuracy on sample — Pro: 63.5%  |  gemini-2.5-flash: 62.0%
+  confusion     : both✓=120  pro✓/2nd✗=7  pro✗/2nd✓=4  both✗=69
+
+→ /Users/kingjames/Projects/ironmem-locomo-benchmark/results/judge_agreement_PRO_v2.json
+=== DONE ===
+EXIT CODE: 0

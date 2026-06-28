@@ -209,6 +209,7 @@ def write_output(strategy, results, counts, rows, cfg, args) -> Path:
         "ingest_strategy": strategy,
         "answerer_model": cfg.answerer_model,
         "judge_model": cfg.judge_model,
+        "answer_prompt_version": cfg.answer_prompt_version,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "harness_version": __version__,
         "overall_scope": "categories 1-5" if args.include_adversarial else "categories 1-4 (adversarial excluded)",
@@ -269,6 +270,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--strategy", choices=["session", "hybrid", "both"], default="session")
     p.add_argument("--answerer-model", default=DEFAULT_ANSWERER_MODEL)
     p.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL)
+    p.add_argument("--answer-prompt", choices=["v1", "v2"], default="v1",
+                   help="answerer prompt: v1=original, v2=failure-targeted")
     p.add_argument("--vertex-project", default=None, help="override GCP project for Vertex AI")
     p.add_argument("--vertex-location", default=None, help="override Vertex AI region")
     p.add_argument("--include-adversarial", action="store_true", help="count category 5 in overall")
@@ -306,6 +309,7 @@ def build_config(args) -> Config:
     cfg = Config()
     cfg.answerer_model = args.answerer_model
     cfg.judge_model = args.judge_model
+    cfg.answer_prompt_version = args.answer_prompt
     if args.concurrency:
         cfg.max_concurrency = args.concurrency
     if args.retrieve_limit:

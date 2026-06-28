@@ -23,7 +23,7 @@ from benchmark.ingest import load_conversations
 from benchmark.ironmem_client import IronMemClient
 import httpx
 
-LIMITS = [10, 15, 20, 25, 30, 40, 50]
+LIMITS = [10, 25, 50, 75, 100, 150, 200]
 COV = 0.5
 
 
