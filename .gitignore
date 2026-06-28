@@ -1,0 +1,19 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Local env / secrets (never commit)
+.env
+.env.local
+.env.*
+
+# LoCoMo dataset — download separately (see README "Prerequisites")
+data/locomo10.json
+
+# Local-only run artifacts
+results/raw_console/
+
+# OS
+.DS_Store
