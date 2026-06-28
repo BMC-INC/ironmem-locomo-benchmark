@@ -210,6 +210,8 @@ def write_output(strategy, results, counts, rows, cfg, args) -> Path:
         "answerer_model": cfg.answerer_model,
         "judge_model": cfg.judge_model,
         "answer_prompt_version": cfg.answer_prompt_version,
+        "synthesize": cfg.synthesize,
+        "synthesis_model": cfg.synthesis_model if cfg.synthesize else None,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "harness_version": __version__,
         "overall_scope": "categories 1-5" if args.include_adversarial else "categories 1-4 (adversarial excluded)",
@@ -272,6 +274,11 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL)
     p.add_argument("--answer-prompt", choices=["v1", "v2", "v3"], default="v1",
                    help="answerer prompt: v1=original, v2=completeness, v3=v2+date-abstention")
+    p.add_argument("--synthesize", action="store_true",
+                   help="insert a synthesis step that merges retrieved passages into a "
+                        "consolidated brief before the answer model (multi_hop lever)")
+    p.add_argument("--synthesis-model", default=None,
+                   help="model for the synthesis step (default: answerer model)")
     p.add_argument("--vertex-project", default=None, help="override GCP project for Vertex AI")
     p.add_argument("--vertex-location", default=None, help="override Vertex AI region")
     p.add_argument("--include-adversarial", action="store_true", help="count category 5 in overall")
@@ -310,6 +317,8 @@ def build_config(args) -> Config:
     cfg.answerer_model = args.answerer_model
     cfg.judge_model = args.judge_model
     cfg.answer_prompt_version = args.answer_prompt
+    cfg.synthesize = args.synthesize
+    cfg.synthesis_model = args.synthesis_model
     if args.concurrency:
         cfg.max_concurrency = args.concurrency
     if args.retrieve_limit:

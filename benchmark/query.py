@@ -87,6 +87,25 @@ ANSWERER_PROMPTS = {
     "v3": ANSWERER_PROMPT_V3,
 }
 
+SYNTHESIS_PROMPT = """You are preparing evidence for another model that will answer a question
+about people from their conversation history. Below are retrieved memory passages,
+some relevant and some not.
+
+Question: {question}
+
+Passages:
+{context}
+
+Write a single consolidated brief of only the facts relevant to the question.
+- Merge facts about the same entity, event, or timeline into one statement.
+- Make every cross-reference explicit: resolve pronouns and relative dates, and
+  connect facts that must be combined to answer the question (e.g. "X did Y" plus
+  "Y was on Z" becomes "X did Y on Z").
+- Preserve every distinct relevant fact; drop nothing and invent nothing.
+- If passages conflict, keep both and note the conflict.
+
+Output only the brief, as a short list of consolidated facts."""
+
 EXPAND_PROMPT = """You are helping a memory-retrieval system find relevant facts about a \
 person from their conversation history. Rewrite the question below as {n} alternative search \
 queries that express the same information need with different wording, synonyms, or by \
@@ -112,6 +131,24 @@ def build_context(memories: list[dict]) -> str:
         suffix = f"  (tags: {tags})" if tags else ""
         lines.append(f"[{i}] {summary}{suffix}")
     return "\n".join(lines)
+
+
+async def synthesize_context(
+    gemini: GeminiClient, cfg: Config, question: str, context_text: str
+) -> str:
+    """Merge retrieved passages into a consolidated, cross-referenced brief before
+    the answer model sees them. The multi_hop lever: chains gold-present-but-uncombined
+    hops. Returns the brief; on empty input returns the input unchanged."""
+    if not context_text:
+        return context_text
+    prompt = SYNTHESIS_PROMPT.format(context=context_text, question=question)
+    brief = await gemini.generate(
+        cfg.synthesis_model or cfg.answerer_model,
+        prompt,
+        max_output_tokens=cfg.answerer_max_tokens,
+        thinking_budget=cfg.answerer_thinking_budget,
+    )
+    return (brief or "").strip() or context_text
 
 
 async def answer_question(gemini: GeminiClient, cfg: Config, question: str, context_text: str) -> str:
@@ -332,5 +369,7 @@ async def retrieve_and_answer(
     else:
         memories = await client.get_context(project, query=question, limit=cfg.retrieve_limit)
     context_text = build_context(memories)
+    if cfg.synthesize:
+        context_text = await synthesize_context(gemini, cfg, question, context_text)
     answer = await answer_question(gemini, cfg, question, context_text)
     return answer, context_text, memories

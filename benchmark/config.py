@@ -69,6 +69,10 @@ class Config:
     # Answerer prompt version: "v1" = original, "v2" = failure-targeted
     # (exhaustive list aggregation, no-preamble brevity, commit-to-inference).
     answer_prompt_version: str = "v1"
+    # Synthesis answerer: insert an LLM step that merges retrieved passages into a
+    # consolidated, cross-referenced brief before the answer model (multi_hop lever).
+    synthesize: bool = False
+    synthesis_model: str | None = None  # None -> use answerer_model
 
     # Per-call token budgets. Gemini 2.5 Pro always "thinks", so max_output_tokens
     # leaves headroom for thinking tokens on top of the visible answer.
