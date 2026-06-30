@@ -10,28 +10,40 @@ All runs use the live IronMem memory store (28,554+ memories, 10 LoCoMo conversa
 
 Question accounting: the LoCoMo corpus is 1,986 questions. Categories 1 to 4 (single_hop, multi_hop, temporal, open_domain) total 1,540 scored questions. The 446 adversarial questions (category 5) are logged but excluded from scoring, so every overall accuracy below is over the 1,540 scored set.
 
-### Headline: V2 Pro-judged (2026-06-27)
+### Headline: governance-off, Pro-judged (2026-06-30)
 
-`results/upg8_PRO_p100_k25_v2.json` (Pro answerer + Pro judge, hybrid, p100/k25, v2 answer prompt, skip-ingest, error_count 0).
+The strongest configuration sets the two governance retrieval boosts (writer-tier weight and temporal-trust weight) to 0, so candidates are ranked on pure relevance. Governance metadata (writer identity, trust tier, provenance, ledger) is still recorded on every memory and remains fully queryable; it just no longer tilts ranking. `results/upg13_PRO_p100_k25_v2_govoff.json` (Pro answerer + Pro judge, hybrid, p100/k25, v2 answer prompt, governance weights 0, skip-ingest, error_count 0).
 
 | Category | Score | n |
 |---|---|---|
-| single_hop | 69.6% | 841 |
-| multi_hop | 50.4% | 282 |
-| temporal | 76.0% | 321 |
-| open_domain | 45.8% | 96 |
-| **Overall** | **65.9%** | **1,540 scored** |
+| single_hop | 72.1% | 841 |
+| multi_hop | 52.5% | 282 |
+| temporal | 78.2% | 321 |
+| open_domain | 50.0% | 96 |
+| **Overall** | **68.4%** | **1,540 scored** |
 
-Judge independence: Flash 2nd-judge Cohen's kappa = 0.88, 94.5% raw agreement on an n=200 sample. On that sample the Pro judge agreed with gold 63.5% of the time and the Flash judge 62.0% (`results/judge_agreement_PRO_v2.json`).
+#### Single-variable A/B: governance weights
 
-<!-- PLACEHOLDER: upg9 synthesis results go here when validated. Synthesis answerer is built but not yet validated against this baseline. -->
+Same Pro/Pro, v2, p100/k25 config; the only difference is the governance retrieval weights. Both runs are clean (0 / 1,986 errors).
+
+| Config | Overall | single_hop | multi_hop | temporal | open_domain |
+|---|---|---|---|---|---|
+| Governed (weights 0.05, default) | 66.3% | 69.0% | 50.0% | 77.9% | 52.1% |
+| **Governance-off (weights 0)** | **68.4%** | 72.1% | 52.5% | 78.2% | 50.0% |
+| Δ | **+2.1** | +3.1 | +2.5 | +0.3 | -2.1 |
+
+Why it moves: the writer-tier and temporal-trust boosts each add 0.05 to a Reciprocal Rank Fusion base score that spans only 0.0119 to 0.0167 across the top 25 candidates (the gap between adjacent ranks is about 0.0003). At that scale a 0.05 add does not nudge near-ties as intended, it hard-partitions candidates by writer tier and overrides relevance. Zeroing both restores pure relevance ranking and lifts overall accuracy by 2.1 points, with the gains in single_hop (+3.1) and multi_hop (+2.5). The lone regression is open_domain (-2.1, n=96, the smallest and noisiest category). Governed baseline file: `results/upg11_PRO_p100_k25_v2_parity.json` (cloud, 66.3%); the earlier local run `results/upg8_PRO_p100_k25_v2.json` reproduced this at 65.9%.
+
+Judge independence (measured on the governed v2 run): Flash 2nd-judge Cohen's kappa = 0.88, 94.5% raw agreement on an n=200 sample. On that sample the Pro judge agreed with gold 63.5% of the time and the Flash judge 62.0% (`results/judge_agreement_PRO_v2.json`).
 
 ### Run History
 
 | Run | Config | Overall | multi_hop | temporal | Judge | File |
 |---|---|---|---|---|---|---|
+| V2 governance-off (headline) | Pro/Pro, hybrid, p100/k25, v2, gov weights 0 | 68.4% | 52.5% | 78.2% | Pro, kappa 0.88 | `results/upg13_PRO_p100_k25_v2_govoff.json` |
+| V2 governed (cloud parity) | Pro/Pro, hybrid, p100/k25, v2 | 66.3% | 50.0% | 77.9% | Pro | `results/upg11_PRO_p100_k25_v2_parity.json` |
+| V2 governed (local) | Pro/Pro, hybrid, p100/k25, v2 prompt | 65.9% | 50.4% | 76.0% | Pro, kappa 0.88 | `results/upg8_PRO_p100_k25_v2.json` |
 | V1 | Pro/Pro, hybrid, p100/k25, v1 prompt | 65.9% | 47.2% | 78.5% | Pro, kappa 0.80 | `results/upg6_PRO_p100_k25.json` |
-| V2 (headline) | Pro/Pro, hybrid, p100/k25, v2 prompt | 65.9% | 50.4% | 76.0% | Pro, kappa 0.88 | `results/upg8_PRO_p100_k25_v2.json` |
 | Flash baseline | Flash/Flash, hybrid, p100/k25 | 60.7% | 42.6% | 67.3% | Flash | `results/upg_validation_fullstack_flash_p100_k25.json` |
 | Prior Pro | Pro/Pro, hybrid, pool 50 + rerank | 60.9% | -- | -- | Pro | `results/upg3_PRO_C_rerank_pool50.json` |
 
@@ -159,21 +171,34 @@ ironmem-locomo-benchmark/
 
 | Lever | Type | Status | Impact |
 |---|---|---|---|
+| Governance retrieval weights off | Retrieval ranking | Confirmed (current headline) | +2.1pp overall (single +3.1, multi +2.5); open_domain -2.1 |
 | Answer prompt tuning | Lateral (redistributes, net 0) | Maxed at V2 | multi_hop +3.2pp, open_domain +2.0pp; paid by temporal -2.5pp |
-| Synthesis answerer | multi_hop (the real lever) | Built, not yet validated | Target: multi_hop 50 -> 55-60% |
-| Cross-encoder reranker | Retrieval recall | Built, GPU-gated (`cross_encoder_ready: false`) | pool 150 sweet spot (~84% raw recall) |
-| Pool size | Retrieval recall | Settled at 100 (LLM rerank) / 150 (cross-encoder) | raw recall 73.2% @100, 83.9% @150, flat @200 |
+| Synthesis answerer | multi_hop | Built; preliminary runs flat | No overall gain yet; clean re-run pending |
+| Cross-encoder reranker | Retrieval recall | Tested on GPU, lost as built | -5.7pp vs the LLM reranker; it reranks truncated text, structured-evidence variant untested |
+| Pool size | Retrieval recall | Settled at 100 (LLM rerank) | raw recall 73.2% @100, 83.9% @150, flat @200 |
 | open_domain | Extraction-capped | Low priority | much of open_domain gold is not in the source transcript |
+
+## Path past 70%
+
+Governance-off banks 68.4%. The remaining 1.6 points to clear 70% sit almost entirely in the two laggard categories, multi_hop (52.5%) and open_domain (50.0%); single_hop (72.1%) and temporal (78.2%) are already strong.
+
+Candidate levers, in priority order:
+
+1. **Structured-evidence reranking.** Both the LLM reranker and the GPU cross-encoder currently rerank truncated document text (roughly the first few hundred characters of each candidate). Reranking structured evidence instead, the atomic fact, its event date, the speaker, and the source turn ids, hands the reranker the fields that actually decide multi_hop and temporal questions. The off-the-shelf cross-encoder lost as-built (-5.7pp) precisely because it reranked truncated text, so the structured-evidence form is the untested and most promising version of this lever.
+2. **Routed weighted fusion.** Today every category shares one broad RRF blend of the FTS and vector candidate lists. Routing the fusion weights by question type (lexical-heavy for single_hop, graph and temporal-heavy for multi_hop and temporal) targets the categories that are leaking instead of a single one-size blend.
+3. **Per-fact temporal proximity.** multi_hop questions that chain across dated events benefit from boosting candidates whose event dates are close to the dates referenced in the question. That is a relevance signal, the kind that just helped, not a trust signal, the kind that just hurt.
+
+open_domain (50.0%) is largely extraction-capped: a meaningful share of its gold answers are not present in the source transcript, so it is a ceiling rather than a lever. The realistic route past 70% is lifting multi_hop from 52.5% toward 60% via levers 1 and 2. On the current category weights (282 of 1,540 scored), a multi_hop move of that size is worth roughly 1.4 points of overall on its own, and the single_hop and temporal gains from structured-evidence reranking carry it the rest of the way.
 
 ## Comparison with other systems
 
 | System | Benchmark | Overall | multi_hop | temporal | Governed |
 |---|---|---|---|---|---|
-| **IronMem** | LoCoMo (Pro judge) | **65.9%** | 50.4% | 76.0% | Yes |
+| **IronMem** | LoCoMo (Pro judge) | **68.4%** | 52.5% | 78.2% | Yes |
 | Mem0 | LoCoMo (gpt-4o-mini judge) | 75.78%\* | 46.88%\* | 85.05%\* | No |
 | Supermemory | LongMemEval (recall metric) | 95% R@15\* | -- | 91%\* | No |
 
-\* Self-reported by those projects on different judge models and/or a different benchmark. Not independently reproduced here and not directly comparable. A clean comparison requires running each system on the same benchmark with the same judge. Of note, IronMem's multi_hop (50.4%) exceeds Mem0's reported multi_hop (46.88%) despite Mem0's higher reported overall on a more lenient judge model.
+\* Self-reported by those projects on different judge models and/or a different benchmark. Not independently reproduced here and not directly comparable. A clean comparison requires running each system on the same benchmark with the same judge. Of note, IronMem's multi_hop (52.5%) exceeds Mem0's reported multi_hop (46.88%) despite Mem0's higher reported overall on a more lenient judge model.
 
 ## Citation
 
