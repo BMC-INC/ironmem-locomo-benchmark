@@ -33,6 +33,7 @@ tar \
   --exclude target \
   --exclude .git \
   --exclude '.DS_Store' \
+  --exclude 'phase1_provider_DRAFT.patch' \
   -czf "$workdir/ironmem-src.tar.gz" \
   -C "$(dirname "$IRONMEM_SRC")" "$(basename "$IRONMEM_SRC")"
 
@@ -43,6 +44,8 @@ tar \
   --exclude '__pycache__' \
   --exclude '.pytest_cache' \
   --exclude '.DS_Store' \
+  --exclude 'IRONMEM.md' \
+  --exclude 'results/raw_console/*.pid' \
   -czf "$workdir/bench-src.tar.gz" \
   -C "$(dirname "$BENCH_SRC")" "$(basename "$BENCH_SRC")"
 
