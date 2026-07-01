@@ -1,0 +1,5 @@
+288 errored question(s) in upg9_PRO_p100_k25_v3syn.json; matched 288 to the
+dataset.
+by category: {'adversarial': 87, 'temporal': 33, 'single_hop': 129, 'multi_hop':
+32, 'open_domain': 7}
+server ok: 29251 memories, 60200 observations

@@ -69,8 +69,9 @@ class Config:
     # Answerer prompt version: "v1" = original, "v2" = failure-targeted
     # (exhaustive list aggregation, no-preamble brevity, commit-to-inference).
     answer_prompt_version: str = "v1"
-    # Synthesis answerer: insert an LLM step that merges retrieved passages into a
-    # consolidated, cross-referenced brief before the answer model (multi_hop lever).
+    # Multi-hop master aggregator: when enabled, route multi-hop questions through
+    # evidence quotes + logic trace + concise final answer. Other question classes
+    # keep the normal answerer path.
     synthesize: bool = False
     synthesis_model: str | None = None  # None -> use answerer_model
 

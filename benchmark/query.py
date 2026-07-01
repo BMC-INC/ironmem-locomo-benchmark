@@ -106,6 +106,39 @@ Write a single consolidated brief of only the facts relevant to the question.
 
 Output only the brief, as a short list of consolidated facts."""
 
+MASTER_AGGREGATOR_PROMPT = """You are the master evidence aggregator for a memory system.
+Answer a multi-hop question using ONLY the numbered context. Your job is to
+preserve source evidence first, then connect the hops explicitly.
+
+Question: {question}
+
+Numbered context:
+{context}
+
+Return ONLY valid JSON with this shape:
+{{
+  "evidence_quotes": [
+    {{
+      "source": 1,
+      "quote": "short verbatim quote from that numbered context item",
+      "timestamp_or_anchor": "date/time anchor if present, else empty string",
+      "role": "what this quote proves"
+    }}
+  ],
+  "logic_trace": [
+    "short step connecting evidence; resolve pronouns, home country/place names, dates, and conflicts"
+  ],
+  "final_answer": "concise direct answer only"
+}}
+
+Rules:
+- Use at least two evidence quotes when the question needs multiple hops.
+- Quote only text that appears in the context; do not invent evidence.
+- Prefer source/locomo/fact passages over synthesized or derived passages when both exist.
+- If the context lacks a required hop, set final_answer exactly to:
+  I don't have enough information
+- The final_answer must be short and directly scoreable; no source numbers there."""
+
 EXPAND_PROMPT = """You are helping a memory-retrieval system find relevant facts about a \
 person from their conversation history. Rewrite the question below as {n} alternative search \
 queries that express the same information need with different wording, synonyms, or by \
@@ -159,6 +192,101 @@ async def synthesize_context(
         "RAW PASSAGES (for any detail not captured above):\n"
         f"{context_text}"
     )
+
+
+def _strip_json_fence(text: str) -> str:
+    text = (text or "").strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```[a-zA-Z]*\n?|\n?```$", "", text).strip()
+    return text
+
+
+def _parse_json_object(text: str) -> dict | None:
+    text = _strip_json_fence(text)
+    try:
+        data = json.loads(text)
+    except Exception:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            return None
+        try:
+            data = json.loads(match.group(0))
+        except Exception:
+            return None
+    return data if isinstance(data, dict) else None
+
+
+def _normalize_evidence_quotes(raw: object) -> list[dict]:
+    quotes: list[dict] = []
+    if not isinstance(raw, list):
+        return quotes
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        quote = str(item.get("quote") or "").strip()
+        if not quote:
+            continue
+        source = item.get("source")
+        try:
+            source = int(source)
+        except Exception:
+            source = None
+        quotes.append({
+            "source": source,
+            "quote": quote[:600],
+            "timestamp_or_anchor": str(item.get("timestamp_or_anchor") or "").strip()[:200],
+            "role": str(item.get("role") or "").strip()[:300],
+        })
+    return quotes
+
+
+def _normalize_logic_trace(raw: object) -> list[str]:
+    if isinstance(raw, list):
+        return [str(item).strip()[:500] for item in raw if str(item).strip()]
+    if isinstance(raw, str) and raw.strip():
+        return [raw.strip()[:500]]
+    return []
+
+
+async def answer_with_master_aggregator(
+    gemini: GeminiClient,
+    cfg: Config,
+    question: str,
+    context_text: str,
+) -> tuple[str, dict]:
+    """E-mem-style multi-hop answerer: evidence quotes first, logic trace second,
+    concise final answer last. Returns (final_answer, trace). On malformed JSON,
+    falls back to the standard answerer but records the raw aggregator reply."""
+    prompt = MASTER_AGGREGATOR_PROMPT.format(
+        context=context_text or "(no relevant memories found)",
+        question=question,
+    )
+    raw = await gemini.generate(
+        cfg.synthesis_model or cfg.answerer_model,
+        prompt,
+        max_output_tokens=max(cfg.answerer_max_tokens, 1536),
+        thinking_budget=cfg.answerer_thinking_budget,
+    )
+    data = _parse_json_object(raw)
+    if not data:
+        fallback = await answer_question(gemini, cfg, question, context_text)
+        return fallback, {
+            "mode": "master_aggregator",
+            "parse_error": True,
+            "raw_reply": (raw or "")[:4000],
+            "fallback_answer": fallback,
+        }
+
+    final_answer = str(data.get("final_answer") or "").strip()
+    if not final_answer:
+        final_answer = "I don't have enough information"
+    trace = {
+        "mode": "master_aggregator",
+        "parse_error": False,
+        "evidence_quotes": _normalize_evidence_quotes(data.get("evidence_quotes")),
+        "logic_trace": _normalize_logic_trace(data.get("logic_trace")),
+    }
+    return final_answer, trace
 
 
 async def answer_question(gemini: GeminiClient, cfg: Config, question: str, context_text: str) -> str:
@@ -361,11 +489,12 @@ async def retrieve_and_answer(
     cfg: Config,
     project: str,
     question: str,
-) -> tuple[str, str, list[dict]]:
-    """Returns (generated_answer, retrieved_context_text, raw_memories)."""
+) -> tuple[str, str, list[dict], dict | None]:
+    """Returns (generated_answer, retrieved_context_text, raw_memories, answer_trace)."""
+    question_class = classify_question(question) if cfg.route or cfg.synthesize else "default"
     if cfg.route:
         # Governed router: per-question class -> (multi_query_n, retrieve_limit).
-        n, limit = route_params(classify_question(question), cfg)
+        n, limit = route_params(question_class, cfg)
         if n > 0:
             memories = await multi_query_retrieve(
                 client, gemini, cfg, project, question, n=n, limit=limit
@@ -379,7 +508,11 @@ async def retrieve_and_answer(
     else:
         memories = await client.get_context(project, query=question, limit=cfg.retrieve_limit)
     context_text = build_context(memories)
-    if cfg.synthesize:
-        context_text = await synthesize_context(gemini, cfg, question, context_text)
-    answer = await answer_question(gemini, cfg, question, context_text)
-    return answer, context_text, memories
+    answer_trace = None
+    if cfg.synthesize and question_class == "multi_hop":
+        answer, answer_trace = await answer_with_master_aggregator(
+            gemini, cfg, question, context_text
+        )
+    else:
+        answer = await answer_question(gemini, cfg, question, context_text)
+    return answer, context_text, memories, answer_trace

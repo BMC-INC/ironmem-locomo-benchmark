@@ -1,0 +1,36 @@
+IronMem LoCoMo — 10 conversation(s), 1986 question(s) |
+answerer=gemini-2.5-flash judge=gemini-2.5-flash |
+vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+server ok: 29044 memories, 60142 observations | embedder: bge-small-en-v1.5 (dim
+384)
+eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:23:57 eta 0:00:00
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/kingjames/Projects/ironmem-locomo-benchmark/benchmark/run.py", line 411, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/kingjames/Projects/ironmem-locomo-benchmark/benchmark/run.py", line 407, in main
+    return asyncio.run(amain(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kingjames/.local/share/uv/python/cpython-3.12-macos-x86_64-none/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/Users/kingjames/.local/share/uv/python/cpython-3.12-macos-x86_64-none/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kingjames/.local/share/uv/python/cpython-3.12-macos-x86_64-none/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/kingjames/Projects/ironmem-locomo-benchmark/benchmark/run.py", line 399, in amain
+    path = write_output(strategy, results, counts, rows, cfg, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kingjames/Projects/ironmem-locomo-benchmark/benchmark/run.py", line 235, in write_output
+    path.write_text(json.dumps(out, indent=2))
+  File "/Users/kingjames/.local/share/uv/python/cpython-3.12-macos-x86_64-none/lib/python3.12/pathlib.py", line 1047, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kingjames/.local/share/uv/python/cpython-3.12-macos-x86_64-none/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/kingjames/Projects/ironmem-locomo-benchmark/results/results/upg9_FLASH_p100_k25_v3syn.json'

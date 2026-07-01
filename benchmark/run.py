@@ -125,14 +125,14 @@ async def eval_one(clients, cfg, sem, conv, q_index, qa, strategy, judge_adversa
     gt = ground_truth_for(qa, category)
     project = cfg.project_for(conv.sample_id, strategy)
     error = None
-    answer, context_text, memories, score = "", "", [], None
+    answer, context_text, memories, answer_trace, score = "", "", [], None, None
     # LoCoMo adversarial (cat 5) are false-premise questions; mem0/locomo do not
     # score them by gold-answer matching. We still answer + log them, but leave
     # score=None (not scored) unless --include-adversarial is set.
     do_judge = category != 5 or judge_adversarial
     async with sem:
         try:
-            answer, context_text, memories = await retrieve_and_answer(
+            answer, context_text, memories, answer_trace = await retrieve_and_answer(
                 clients.ironmem, clients.gemini, cfg, project, question
             )
             if do_judge:
@@ -143,7 +143,7 @@ async def eval_one(clients, cfg, sem, conv, q_index, qa, strategy, judge_adversa
     progress.advance(task)
     return {
         "conversation_id": conv.sample_id,
-        "question_id": f"{conv.sample_id}_q{q_index}",
+        "question_id": str(qa.get("question_id") or f"{conv.sample_id}_q{q_index}"),
         "category": CATEGORY_MAP.get(category, str(category)),
         "category_int": category,
         "question": question,
@@ -151,6 +151,7 @@ async def eval_one(clients, cfg, sem, conv, q_index, qa, strategy, judge_adversa
         "retrieved_context": context_text,
         "num_retrieved": len(memories),
         "generated_answer": answer,
+        "answer_trace": answer_trace,
         "score": score,
         "error": error,
     }
@@ -226,6 +227,11 @@ def write_output(strategy, results, counts, rows, cfg, args) -> Path:
     if args.output:
         path = Path(args.output)
         if not path.is_absolute():
+            # Tolerate an accidental leading "results/" (we add it below), so
+            # both "X.json" and "results/X.json" resolve to results/X.json
+            # instead of results/results/X.json.
+            if path.parts and path.parts[0] == results_dir.name:
+                path = Path(*path.parts[1:])
             path = results_dir / path
     else:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -275,8 +281,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--answer-prompt", choices=["v1", "v2", "v3"], default="v1",
                    help="answerer prompt: v1=original, v2=completeness, v3=v2+date-abstention")
     p.add_argument("--synthesize", action="store_true",
-                   help="insert a synthesis step that merges retrieved passages into a "
-                        "consolidated brief before the answer model (multi_hop lever)")
+                   help="route multi-hop questions through the evidence-first master "
+                        "aggregator before scoring; other classes use the normal answerer")
     p.add_argument("--synthesis-model", default=None,
                    help="model for the synthesis step (default: answerer model)")
     p.add_argument("--vertex-project", default=None, help="override GCP project for Vertex AI")
@@ -307,6 +313,11 @@ def parse_args(argv=None) -> argparse.Namespace:
         "--route",
         action="store_true",
         help="governed retrieval router: classify each question by text and pick per-question params",
+    )
+    p.add_argument(
+        "--require-cross-encoder",
+        action="store_true",
+        help="fail before scoring unless /status reports rerank.backend=cross_encoder and cross_encoder_ready=true",
     )
     p.add_argument("--dataset-version", default="original", help="label only (original | refined)")
     return p.parse_args(argv)
@@ -387,6 +398,22 @@ async def amain(args) -> int:
             f"[dim]server ok: {status.get('memories')} memories, "
             f"{status.get('observations')} observations | embedder: {emb or 'unknown'}[/dim]"
         )
+        rerank_status = status.get("rerank") or {}
+        if rerank_status:
+            console.print(
+                f"[dim]rerank backend: {rerank_status.get('backend', 'unknown')} | "
+                f"cross_encoder_ready={rerank_status.get('cross_encoder_ready', False)}[/dim]"
+            )
+        if args.require_cross_encoder:
+            if (
+                str(rerank_status.get("backend", "")).lower() != "cross_encoder"
+                or not rerank_status.get("cross_encoder_ready")
+            ):
+                console.print(
+                    "[red]Cross-encoder required but not active. Set "
+                    "IRONMEM_RERANK_BACKEND=cross_encoder, restart IronMem, and verify /status.[/red]"
+                )
+                return 2
         if emb and emb.lower().startswith("none"):
             console.print("[yellow]⚠ embedder is 'none' — /context retrieval is keyword-only. "
                           "Deploy the local-onnx IronMem build for semantic retrieval.[/yellow]")
