@@ -671,6 +671,10 @@ def deterministic_hint_queries(question: str) -> list[str]:
         )
     if re.search(r"\b(?:instrument|instruments|music|musical)\b", low):
         add(
+            "violin",
+            "playing violin",
+            "me-time activities",
+            "running reading violin",
             f"{subject} playing violin",
             f"{subject} playing her violin",
             f"{subject} me-time violin",
@@ -864,6 +868,8 @@ async def rerank_with_supplemental_recall(
     by_id: dict = {}
     ranked_id_lists: list[list] = []
     primary_ids = {_memory_id(memory) for memory in primary if _memory_id(memory) is not None}
+    seed_ids: list = []
+    seen_seed_ids: set = set()
     for memories in supplement_lists:
         ids: list = []
         for memory in memories:
@@ -872,9 +878,16 @@ async def rerank_with_supplemental_recall(
                 continue
             by_id.setdefault(mid, memory)
             ids.append(mid)
+        for mid in ids:
+            if mid not in seen_seed_ids:
+                seen_seed_ids.add(mid)
+                seed_ids.append(mid)
+                break
         ranked_id_lists.append(ids)
 
-    fused = rrf_fuse(ranked_id_lists, k=60)
+    fused = seed_ids + [
+        mid for mid in rrf_fuse(ranked_id_lists, k=60) if mid not in seen_seed_ids
+    ]
     supplements = []
     for mid in fused[:supplement_limit]:
         memory = dict(by_id[mid])

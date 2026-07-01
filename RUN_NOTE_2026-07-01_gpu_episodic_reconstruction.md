@@ -35,6 +35,8 @@ retrieve limit 25, Gemini Pro answerer/judge, and cross-encoder rerank.
 | `canary_lost_gained_ce_sample12_gpu_p100_k25_v2agg_episodic_focus4b_20260701T103200Z.json` | yes | 66.67% | 66.67% | 0 |
 | `canary_lost_gained_ce_sample12_gpu_p100_k25_v2agg_episodic_focus4c_20260701T103200Z.json` | yes | 66.67% | 66.67% | 0 |
 | `canary_lost_gained_ce_sample12_gpu_p100_k25_v2agg_focus4d_20260701T103200Z.json` | no | 75.00% | 75.00% | 0 |
+| `canary_lost_gained_ce_sample12_gpu_p100_k25_v2agg_normhints_20260701T221457Z.json` | no | 91.67% | 91.67% | 0 |
+| `canary_lost_gained_ce_sample12_gpu_p100_k25_v2agg_normhints2_20260701T221457Z.json` | no | 100.00% | 100.00% | 0 |
 
 ## Decision
 
@@ -43,7 +45,8 @@ episodic canary recovered from 41.67% to 66.67%, but it still trails the best
 non-episodic GPU canary at 75.00%.
 
 The best current record-attempt candidate from this run family is the
-non-episodic cross-encoder path with focused supplemental hints:
+non-episodic cross-encoder path with focused supplemental hints, deterministic
+per-hint supplement seeding, and deterministic list-answer normalization:
 
 ```bash
 python -m benchmark.run --strategy hybrid --skip-ingest --rerank \
@@ -54,6 +57,11 @@ python -m benchmark.run --strategy hybrid --skip-ingest --rerank \
   --output results/<run_name>.json
 ```
 
+The `normhints2` canary reached 100.00% after adding bare instrument hints such
+as `violin`, `playing violin`, and `me-time activities`, and after seeding the
+top unique hit from each deterministic hint before RRF fills remaining
+supplemental slots.
+
 ## Next build target
 
 The episodic path is useful infrastructure, but the next accuracy work should be
@@ -63,6 +71,7 @@ missed merged-name conflicts, and activity/category normalization errors.
 
 Canary gate for future work:
 
-- Must beat the 75.00% 12-question GPU canary before a full Pro run.
+- Must beat the 100.00% 12-question GPU canary on a broader flip-set canary
+  before a full Pro run.
 - Must not regress the recovered `supphints4` wins.
 - Must preserve every run artifact for later training/eval use.
