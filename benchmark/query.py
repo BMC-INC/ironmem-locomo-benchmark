@@ -135,6 +135,16 @@ Rules:
 - Use at least two evidence quotes when the question needs multiple hops.
 - Quote only text that appears in the context; do not invent evidence.
 - Prefer source/locomo/fact passages over synthesized or derived passages when both exist.
+- The final_answer must answer the EXACT question, not a broader topic.
+- For list questions, include an item only when evidence supports every required
+  relation in the question. A related trip, hobby, person, or object is not enough.
+- For "both/common" questions, answer only the shared property or properties the
+  question targets; do not add extra commonalities unless the question asks for all.
+- For name/list questions, role conflicts do not by themselves mean "not enough
+  information"; list the unique names/items that the evidence links to the target.
+- For count questions, count distinct time-separated events or possessions when
+  a later source describes a new one after an earlier one. Do not collapse them
+  solely because each source uses singular wording.
 - If the context lacks a required hop, set final_answer exactly to:
   I don't have enough information
 - The final_answer must be short and directly scoreable; no source numbers there."""
@@ -431,6 +441,28 @@ _TEMPORAL_RE = re.compile(
 )
 # Comparison / chaining words that suggest a multi-hop (multi-entity) question.
 _MULTIHOP_RE = re.compile(r"\b(?:more|less|than|compared|both)\b")
+# List/aggregation questions often need multiple memories even when they mention
+# only one person, e.g. "Which cities has Jon visited?" or "What instruments
+# does Tim play?". Route those through the evidence-first aggregator too.
+_AGGREGATE_NOUN_RE = re.compile(
+    r"\b(?:what|which)\b.*\b(?:"
+    r"accidents?|activities|activity|artists?|authors?|bands?|books?|cars?|cities|"
+    r"classes|dreams?|equipments?|equipment|foods?|games?|instruments?|items?|"
+    r"kinds?|meals?|names?|pets?|places|problems?|schools?|skills?|states|"
+    r"roadtrips?|subjects?|types?|writings?"
+    r")\b"
+)
+_AGGREGATE_ACTION_RE = re.compile(
+    r"\b(?:what|which)\b.*\b(?:"
+    r"been|bought|collects?|done|eating|enjoys?|faced?|inspired|joined|likes?|"
+    r"play(?:s|ed)?|read|refurbished|seen|taken|visited|vacationed"
+    r")\b"
+)
+_COUNT_ACROSS_RE = re.compile(r"\bhow many times\b")
+_WHERE_HISTORY_RE = re.compile(r"\bwhere\b.*\b(?:has|have|had|did)\b.*\b(?:been|visited|gone|traveled|travelled)\b")
+_PURE_DATE_RE = re.compile(
+    r"\b(?:when|what date|which date|what day|what year|which year|what month)\b"
+)
 # Capitalized proper-noun-like token (length >= 3), used away from sentence start.
 _PROPER_RE = re.compile(r"[A-Za-z][A-Za-z']*")
 
@@ -443,7 +475,14 @@ def classify_question(question: str) -> str:
     q = question or ""
     low = q.lower()
 
-    if _TEMPORAL_RE.search(low):
+    aggregate = (
+        _COUNT_ACROSS_RE.search(low)
+        or _WHERE_HISTORY_RE.search(low)
+        or _AGGREGATE_NOUN_RE.search(low)
+        or _AGGREGATE_ACTION_RE.search(low)
+    )
+
+    if _PURE_DATE_RE.search(low) and not aggregate:
         return "temporal"
 
     # multi-hop signals: conjunction, comparatives, possessive chain, or >=2 entities
@@ -451,6 +490,10 @@ def classify_question(question: str) -> str:
         return "multi_hop"
     if _MULTIHOP_RE.search(low):
         return "multi_hop"
+    if aggregate:
+        return "multi_hop"
+    if _TEMPORAL_RE.search(low):
+        return "temporal"
     if low.count("'s") >= 2:  # possessive chain, e.g. "Alice's ... Bob's ..."
         return "multi_hop"
     # >= 2 distinct capitalized proper-noun-like tokens, excluding the sentence-start

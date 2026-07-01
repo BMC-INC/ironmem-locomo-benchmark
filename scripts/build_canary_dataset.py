@@ -42,7 +42,13 @@ def _load_json(path: Path) -> Any:
         raise SystemExit(f"Invalid JSON in {path}: {exc}") from exc
 
 
-def _wanted_question_ids(regression: dict[str, Any], stable_wrong_sample: int, seed: int) -> set[str]:
+def _wanted_question_ids(
+    regression: dict[str, Any],
+    stable_wrong_sample: int,
+    seed: int,
+    buckets: set[str] | None,
+    categories: set[str] | None,
+) -> set[str]:
     entries = regression.get("entries")
     if not isinstance(entries, list):
         raise SystemExit("Regression set must contain entries[]")
@@ -50,10 +56,15 @@ def _wanted_question_ids(regression: dict[str, Any], stable_wrong_sample: int, s
     wanted: set[str] = set()
     stable_by_category: dict[str, list[str]] = defaultdict(list)
     for entry in entries:
+        bucket = str(entry.get("bucket") or "")
+        category = str(entry.get("category") or "")
+        if buckets is not None and bucket not in buckets:
+            continue
+        if categories is not None and category not in categories:
+            continue
         qid = (entry.get("join_key") or {}).get("question_id")
         if not qid:
             continue
-        bucket = entry.get("bucket")
         if bucket in {"lost", "gained"}:
             wanted.add(str(qid))
         elif bucket == "stable_wrong":
@@ -87,7 +98,15 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     if not isinstance(source, list):
         raise SystemExit("Source LoCoMo data must be a JSON list")
 
-    wanted = _wanted_question_ids(regression, args.stable_wrong_sample, args.seed)
+    buckets = set(args.buckets) if args.buckets else None
+    categories = set(args.categories) if args.categories else None
+    wanted = _wanted_question_ids(
+        regression,
+        args.stable_wrong_sample,
+        args.seed,
+        buckets,
+        categories,
+    )
     by_conv: dict[str, set[int]] = defaultdict(set)
     for qid in wanted:
         conv_id, idx = _parse_qid(qid)
@@ -161,6 +180,18 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=60,
         help="stratified stable_wrong sample count to add beside all lost/gained",
+    )
+    parser.add_argument(
+        "--buckets",
+        nargs="+",
+        default=None,
+        help="only include these regression buckets; default keeps lost/gained plus sampled stable_wrong",
+    )
+    parser.add_argument(
+        "--categories",
+        nargs="+",
+        default=None,
+        help="only include these category names, e.g. multi_hop single_hop",
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--force", action="store_true", help="Overwrite output if it already exists")
