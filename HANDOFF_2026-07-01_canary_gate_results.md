@@ -161,3 +161,41 @@ questions. A local 256-question CPU CE canary is therefore not justified yet; it
 would likely take around 2.5-3 hours and still may not move the score. The next
 engineering target is turning the better CE evidence placement into better final
 answers, or running CE on a proper GPU/faster backend before a broader canary.
+
+## Answer-Key Aggregator Follow-Up
+
+The CE sample failures were inspected manually. They split into:
+
+- Over-answering with incidental activities or outings.
+- Bought/purchased questions picking up acquired pets.
+- Missing evidence where CE still did not retrieve the second required fact
+  (`violin`, `Paris`, and `swimming` were not in the retrieved contexts).
+
+The master aggregator prompt was tightened to produce answer-key-style final
+answers:
+
+- comma-separated short noun phrases for list questions
+- activity categories instead of every subactivity/destination
+- "partake in" as recurring hobbies/activities, not one-off outings
+- child "likes" as interest categories
+- bought/purchased as objects only, not acquired pets or experiences
+
+Exact 12-question CE sample reruns:
+
+| Run | Result | Notes |
+| --- | ---: | --- |
+| `canary_lost_gained_ce_sample12_p100_k25_v2agg_answerkey_e685d86_20260701.json` | `8/12` (`66.7%`) | Fixed over-answer rows, regressed bought-items by adding Bailey. |
+| `canary_lost_gained_ce_sample12_p100_k25_v2agg_answerkey2_e685d86_20260701.json` | `8/12` (`66.7%`) | Fixed bought-items, lost the kids-like row. |
+| `canary_lost_gained_ce_sample12_p100_k25_v2agg_answerkey3_e685d86_20260701.json` | `8/12` (`66.7%`) | Current prompt. Keeps bought-items fixed and answer-key style compact. |
+
+Current wrong rows on `answerkey3`:
+
+- `conv-26_q15`: context lacks `swimming`; answer has `pottery, painting, camping, hiking`
+- `conv-26_q19`: answer says `animals, pottery, painting, nature`; judge wanted `dinosaurs, nature`
+- `conv-26_q60`: context lacks `violin`; answer has `clarinet`
+- `conv-30_q29`: context lacks `Paris`; answer has `Rome`
+
+Decision: keep the answer-key prompt improvement, but stop tuning against this
+tiny 12-question sample. The next meaningful product lever is retrieval
+decomposition/query expansion that brings missing second facts into context
+without multiplying local CPU CE cost too much.

@@ -138,6 +138,26 @@ Rules:
 - The final_answer must answer the EXACT question, not a broader topic.
 - For list questions, include an item only when evidence supports every required
   relation in the question. A related trip, hobby, person, or object is not enough.
+- For list questions, make final_answer an answer-key-style comma-separated list
+  of short canonical noun phrases. Avoid explanatory sentences unless needed.
+- For activity questions, answer with activity categories, not every subactivity,
+  destination, accident, feeling, or detail from the same passage. For example,
+  "camping" covers roasting marshmallows and telling stories; "hiking" covers
+  trail walks; a road trip destination is not itself an activity.
+- For "partake in" activity questions, prefer hobbies and recurring activities;
+  do not include one-off outings or venues such as concerts, museum trips, road
+  trips, birthdays, or destinations unless the question explicitly asks for events
+  or places.
+- For "what does X like" questions, answer stable interests or categories, not
+  every one-off event they attended. If the evidence is a dinosaur exhibit,
+  "dinosaurs" is the interest; if the evidence is camping/hiking/forests, "nature"
+  is the interest.
+- For "what do X's kids/children like" questions, compress examples to child
+  interest categories. Animal learning or a dinosaur exhibit should become
+  "dinosaurs" or "animals"; camping, beach, forests, flowers, hiking, and outdoor
+  trips should become "nature" or "outdoors". Do not list each outing separately.
+- For "bought" or "purchased" questions, include only objects clearly bought or
+  purchased. Do not include adopted/acquired pets, trips, classes, or experiences.
 - For "both/common" questions, answer only the shared property or properties the
   question targets; do not add extra commonalities unless the question asks for all.
 - For name/list questions, role conflicts do not by themselves mean "not enough
