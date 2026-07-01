@@ -1,0 +1,17 @@
+IronMem LoCoMo — 2 conversation(s), 12 question(s) | answerer=gemini-2.5-pro 
+judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+strategies=['hybrid']
+server ok: 29731 memories, 61031 observations | embedder: bge-small-en-v1.5 (dim
+384)
+rerank backend: cross_encoder | cross_encoder_ready=True
+eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━━━━━ 12/12 • 0:09:35 eta 0:00:00
+  LoCoMo — IronMem   judge-scored  
+┏━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
+┃ category  ┃ accuracy ┃        n ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
+│ multi_hop │    83.3% │       12 │
+│ overall   │    83.3% │ cats 1-4 │
+└───────────┴──────────┴──────────┘
+→ results written to 
+/Users/kingjames/Projects/ironmem-locomo-benchmark/results/canary_lost_gained_ce
+_sample12_p100_k25_v2agg_supphints4_e685d86_20260701.json

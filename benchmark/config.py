@@ -98,6 +98,19 @@ class Config:
     # Multi-query expansion: when > 0, expand the question into this many variant
     # queries, retrieve per-variant, then RRF-fuse harness-side. 0 = OFF (single query).
     multi_query: int = 0
+    # Cheap recall supplement for reranked runs: keep one expensive server-side
+    # rerank call on the original question, then append deduped memories from
+    # non-reranked expanded queries. This adds recall without multiplying CPU/GPU
+    # cross-encoder cost by the number of query variants.
+    supplement_multi_query: int = 0
+    supplement_limit: int = 8
+    supplement_hints_only: bool = False
+    # E-mem-style answer path for multi-hop/list questions: fetch source-backed
+    # episodes for the retrieved memories, extract only question-relevant evidence,
+    # then answer from that compact evidence set.
+    episodic_reconstruct: bool = False
+    episodic_episode_limit: int = 10
+    episodic_max_original_chars: int = 2500
     # Governed retrieval router: when True, classify each question by a heuristic on
     # its TEXT (never the gold category) and pick per-question retrieval params from
     # the routing table in query.py. False = OFF (behavior unchanged).

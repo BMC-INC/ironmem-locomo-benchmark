@@ -1,0 +1,6 @@
+IronMem LoCoMo — 10 conversation(s), 49 question(s) | answerer=gemini-2.5-pro 
+judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+strategies=['hybrid']
+server ok: 29731 memories, 61031 observations | embedder: bge-small-en-v1.5 (dim
+384)
+rerank backend: cross_encoder | cross_encoder_ready=True

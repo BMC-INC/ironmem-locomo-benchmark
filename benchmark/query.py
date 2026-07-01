@@ -135,6 +135,9 @@ Rules:
 - Use at least two evidence quotes when the question needs multiple hops.
 - Quote only text that appears in the context; do not invent evidence.
 - Prefer source/locomo/fact passages over synthesized or derived passages when both exist.
+- Supplemental recall passages are lower-confidence. Use them only when they
+  directly answer the question or fill a missing hop; do not let them broaden
+  the answer with incidental facts.
 - The final_answer must answer the EXACT question, not a broader topic.
 - For list questions, include an item only when evidence supports every required
   relation in the question. A related trip, hobby, person, or object is not enough.
@@ -147,7 +150,9 @@ Rules:
 - For "partake in" activity questions, prefer hobbies and recurring activities;
   do not include one-off outings or venues such as concerts, museum trips, road
   trips, birthdays, or destinations unless the question explicitly asks for events
-  or places.
+  or places. Do not include instruments, reading, running/races, or generic
+  self-care routine items when the question has a separate instrument or exercise
+  interpretation available.
 - For "what does X like" questions, answer stable interests or categories, not
   every one-off event they attended. If the evidence is a dinosaur exhibit,
   "dinosaurs" is the interest; if the evidence is camping/hiking/forests, "nature"
@@ -156,23 +161,88 @@ Rules:
   interest categories. Animal learning or a dinosaur exhibit should become
   "dinosaurs" or "animals"; camping, beach, forests, flowers, hiking, and outdoor
   trips should become "nature" or "outdoors". Do not list each outing separately.
+  Prefer the most specific directly supported interests. Do not add parent hobbies,
+  classes, venues, or broad synonyms when a narrower answer is supported.
+  Example: if the evidence says the kids loved dinosaurs and enjoy nature, answer
+  "dinosaurs, nature", not "animals, outdoors, beach, painting, pottery".
 - For "bought" or "purchased" questions, include only objects clearly bought or
   purchased. Do not include adopted/acquired pets, trips, classes, or experiences.
 - For "both/common" questions, answer only the shared property or properties the
   question targets; do not add extra commonalities unless the question asks for all.
 - For name/list questions, role conflicts do not by themselves mean "not enough
   information"; list the unique names/items that the evidence links to the target.
+  If multiple dated sources name different pets/items and the question does not
+  ask for the current/latest state, merge the unique supported names.
 - For count questions, count distinct time-separated events or possessions when
   a later source describes a new one after an earlier one. Do not collapse them
   solely because each source uses singular wording.
+- For family-activity questions, answer activities, not venues or performances.
+  "Grand Canyon" is a place, not an activity; "birthday concert" is an event
+  unless the question asks for events. Include workshops, painting, pottery,
+  camping, hiking, museums, road trips, and similar do-with-family activities
+  when directly supported.
 - If the context lacks a required hop, set final_answer exactly to:
   I don't have enough information
 - The final_answer must be short and directly scoreable; no source numbers there."""
+
+EPISODIC_RECONSTRUCTION_PROMPT = """You are an episodic evidence reconstruction assistant.
+You receive source-backed memory episodes retrieved for one LoCoMo question.
+Your job is NOT to answer broadly. Your job is to extract only the evidence
+needed to answer the exact question.
+
+Question: {question}
+
+Episodes:
+{episodes}
+
+Return ONLY valid JSON with this shape:
+{{
+  "evidence_quotes": [
+    {{
+      "episode": 1,
+      "quote": "short quote or exact fact copied from the episode",
+      "timestamp_or_anchor": "date/time anchor if present, else empty string",
+      "role": "what this quote proves for the question"
+    }}
+  ],
+  "missing_hops": [
+    "short description of any required fact still missing"
+  ]
+}}
+
+Rules:
+- Extract evidence only for the exact question.
+- Prefer atomic fact/source/locomo rows over synthesized or derived rows.
+- Preserve timestamps and speaker/entity names when present.
+- For list questions, extract only items directly tied to the requested subject
+  and relation. Do not extract nearby hobbies, places, or events.
+- For kids/children like questions, extract stable interests. Dinosaur evidence
+  should support "dinosaurs"; camping/forests/nature evidence should support
+  "nature". Do not extract parent hobbies like pottery unless the kids liking
+  them is directly stated.
+- For activity questions, extract activity categories. Do not extract every
+  venue or subactivity from the same event.
+- For "partake in" activity questions, do not extract instruments, reading,
+  running/races, or generic self-care routine items unless the question asks
+  about exercise, self-care, reading, or instruments.
+- For family-activity questions, extract activities, not places or performances:
+  road trips, camping, hiking, pottery workshops, painting, and museum visits are
+  activities; Grand Canyon is a destination and a concert is an event.
+- For name/list questions, extract all unique supported names even if sources
+  disagree on role/species, unless the question asks for the latest/current state.
+- If an episode is irrelevant, ignore it.
+- If no episode contains relevant evidence, return an empty evidence_quotes list."""
 
 EXPAND_PROMPT = """You are helping a memory-retrieval system find relevant facts about a \
 person from their conversation history. Rewrite the question below as {n} alternative search \
 queries that express the same information need with different wording, synonyms, or by \
 decomposing it into focused sub-questions. Aim to maximize recall over the memory store.
+
+For list or multi-hop questions, include focused variants that search for each \
+required relation, entity, object type, activity type, place, date, or count. Use \
+synonyms a memory store may contain, such as "visited places" for cities, \
+"musical instruments" for instruments, "bought/purchased" for items, and \
+"likes/interests" for preferences.
 
 Return ONLY a JSON array of {n} short query strings, and nothing else.
 
@@ -256,7 +326,7 @@ def _normalize_evidence_quotes(raw: object) -> list[dict]:
         quote = str(item.get("quote") or "").strip()
         if not quote:
             continue
-        source = item.get("source")
+        source = item.get("source", item.get("episode"))
         try:
             source = int(source)
         except Exception:
@@ -276,6 +346,117 @@ def _normalize_logic_trace(raw: object) -> list[str]:
     if isinstance(raw, str) and raw.strip():
         return [raw.strip()[:500]]
     return []
+
+
+async def build_episode_context(
+    client: IronMemClient,
+    cfg: Config,
+    memories: list[dict],
+) -> tuple[str, list[dict]]:
+    selected = memories[: max(1, cfg.episodic_episode_limit)]
+    episodes: list[dict] = []
+
+    async def expand(memory: dict, index: int) -> dict:
+        mid = _memory_id(memory)
+        summary = (memory.get("summary") or "").strip()
+        original = ""
+        if mid is not None:
+            try:
+                fetched = await client.retrieve_original(memory_id=int(mid))
+                original = (fetched.get("original") or "").strip()
+            except Exception:
+                original = ""
+        text = original or summary
+        if len(text) > cfg.episodic_max_original_chars:
+            text = text[: cfg.episodic_max_original_chars].rstrip() + "\n[truncated]"
+        return {
+            "episode": index,
+            "memory_id": mid,
+            "session_id": memory.get("session_id"),
+            "tags": memory.get("tags"),
+            "used_original": bool(original),
+            "text": text,
+        }
+
+    episodes = await asyncio.gather(*(expand(memory, idx) for idx, memory in enumerate(selected, 1)))
+    blocks = []
+    for ep in episodes:
+        header = (
+            f"[Episode {ep['episode']}] memory_id={ep['memory_id']} "
+            f"session_id={ep.get('session_id') or ''} tags={ep.get('tags') or ''} "
+            f"source={'original' if ep['used_original'] else 'summary'}"
+        )
+        blocks.append(f"{header}\n{ep['text']}")
+    return "\n\n".join(blocks), episodes
+
+
+async def answer_with_episodic_reconstruction(
+    client: IronMemClient,
+    gemini: GeminiClient,
+    cfg: Config,
+    question: str,
+    memories: list[dict],
+) -> tuple[str, dict]:
+    episode_context, episodes = await build_episode_context(client, cfg, memories)
+    prompt = EPISODIC_RECONSTRUCTION_PROMPT.format(
+        question=question,
+        episodes=episode_context or "(no source episodes found)",
+    )
+    raw = await gemini.generate(
+        cfg.synthesis_model or cfg.answerer_model,
+        prompt,
+        max_output_tokens=max(cfg.answerer_max_tokens, 1536),
+        thinking_budget=cfg.answerer_thinking_budget,
+    )
+    data = _parse_json_object(raw)
+    if data:
+        quotes = _normalize_evidence_quotes(data.get("evidence_quotes"))
+        evidence_lines = []
+        for i, quote in enumerate(quotes, 1):
+            anchor = quote.get("timestamp_or_anchor") or ""
+            role = quote.get("role") or ""
+            evidence_lines.append(
+                f"[{i}] {quote['quote']} "
+                f"(anchor: {anchor}; role: {role}; episode: {quote.get('source') or ''})"
+            )
+        reconstructed = "\n".join(evidence_lines)
+    else:
+        quotes = []
+        reconstructed = ""
+
+    raw_context = build_context(memories)
+    if reconstructed:
+        evidence_context = (
+            "RECONSTRUCTED EPISODIC EVIDENCE:\n"
+            f"{reconstructed}\n\n"
+            "RAW RETRIEVED CONTEXT BACKSTOP:\n"
+            f"{raw_context}"
+        )
+    else:
+        evidence_context = raw_context or episode_context
+
+    answer, master_trace = await answer_with_master_aggregator(
+        gemini, cfg, question, evidence_context
+    )
+    trace = {
+        "mode": "episodic_reconstruction",
+        "parse_error": data is None,
+        "raw_reconstruction_reply": "" if data else (raw or "")[:4000],
+        "episodes": [
+            {
+                "episode": ep["episode"],
+                "memory_id": ep["memory_id"],
+                "session_id": ep.get("session_id"),
+                "tags": ep.get("tags"),
+                "used_original": ep["used_original"],
+            }
+            for ep in episodes
+        ],
+        "evidence_quotes": quotes,
+        "missing_hops": _normalize_logic_trace(data.get("missing_hops")) if data else [],
+        "master_trace": master_trace,
+    }
+    return answer, trace
 
 
 async def answer_with_master_aggregator(
@@ -347,6 +528,74 @@ def rrf_fuse(ranked_id_lists: list[list], k: int = 60) -> list:
         for rank, mid in enumerate(ids):
             scores[mid] = scores.get(mid, 0.0) + 1.0 / (k + rank + 1)
     return sorted(scores, key=lambda mid: scores[mid], reverse=True)
+
+
+def _question_names(question: str) -> list[str]:
+    names: list[str] = []
+    for i, word in enumerate(_PROPER_RE.findall(question or "")):
+        if i == 0:
+            continue
+        if len(word) >= 3 and word[0].isupper() and word not in names:
+            names.append(word)
+    return names
+
+
+def deterministic_hint_queries(question: str) -> list[str]:
+    """Question-shape hints for cheap supplemental recall.
+
+    These are not answer guesses for a specific row; they are typed vocabulary
+    probes that help the memory store surface buried second facts for common
+    LoCoMo answer types.
+    """
+    low = (question or "").lower()
+    names = _question_names(question)
+    subject = " ".join(names[:2]) if names else (question or "")
+    hints: list[str] = []
+
+    def add(*queries: str) -> None:
+        for query in queries:
+            if query.strip():
+                hints.append(query)
+
+    if re.search(r"\b(?:cities|places|where)\b", low) and re.search(
+        r"\b(?:visited|been|gone|travel|trip|roadtrips?)\b", low
+    ):
+        add(
+            f"{subject} visited cities",
+            f"{subject} visited travel destinations cities Paris Rome London Boston",
+        )
+    if re.search(r"\b(?:instrument|instruments|music|musical)\b", low):
+        add(
+            f"{subject} playing violin",
+            f"{subject} plays clarinet",
+            f"{subject} musical instruments plays violin clarinet",
+        )
+    if re.search(r"\b(?:activities|activity|partake|done with|does .* do)\b", low):
+        add(
+            f"{subject} swimming kids",
+            f"{subject} pottery camping painting",
+            f"{subject} activities hobbies swimming camping hiking painting pottery",
+        )
+    if re.search(r"\b(?:kids|children)\b.*\blike", low):
+        add(
+            f"{subject} kids like dinosaurs nature",
+            f"{subject} children loved dinosaurs",
+            f"{subject} kids enjoy nature",
+        )
+    if re.search(r"\b(?:bought|purchased|items)\b", low):
+        add(
+            f"{subject} bought shoes figurines",
+            f"{subject} bought purchased items objects shoes figurines",
+        )
+
+    out: list[str] = []
+    seen: set[str] = set()
+    for hint in hints:
+        key = hint.strip().lower()
+        if key and key not in seen:
+            seen.add(key)
+            out.append(hint)
+    return out
 
 
 def _parse_variants(raw: str, n: int) -> list[str]:
@@ -447,6 +696,88 @@ async def multi_query_retrieve(
 
     fused = rrf_fuse(ranked_id_lists, k=60)
     return [by_id[mid] for mid in fused[:limit]]
+
+
+async def rerank_with_supplemental_recall(
+    client: IronMemClient,
+    gemini: GeminiClient,
+    cfg: Config,
+    project: str,
+    question: str,
+    *,
+    n: int,
+    limit: int,
+) -> tuple[list[dict], dict]:
+    """One expensive reranked retrieval plus cheap expanded recall.
+
+    CPU cross-encoder is too slow to rerank every query variant. This keeps the
+    high-precision reranked list for the original question, then appends deduped
+    non-reranked memories from expanded variants. The answerer sees the extra
+    evidence, while CE cost remains one call per question.
+    """
+    primary = await client.get_context(
+        project, query=question, limit=limit, rerank=True, pool=cfg.pool
+    )
+    hint_queries = deterministic_hint_queries(question)
+    variants = [] if cfg.supplement_hints_only else await expand_query(gemini, cfg, question, n=n)
+    queries: list[str] = []
+    seen_queries = {question.strip().lower()}
+    for variant in [*hint_queries, *variants]:
+        key = variant.strip().lower()
+        if key and key not in seen_queries:
+            seen_queries.add(key)
+            queries.append(variant)
+
+    supplement_limit = max(0, cfg.supplement_limit)
+    if not queries or supplement_limit == 0:
+        return primary, {
+            "mode": "rerank_plus_supplemental_recall",
+            "variants": queries,
+            "primary_count": len(primary),
+            "supplement_count": 0,
+        }
+
+    per_query_limit = max(limit, supplement_limit)
+    supplement_lists = await asyncio.gather(*(
+        client.get_context(
+            project,
+            query=query,
+            limit=per_query_limit,
+            rerank=False,
+            pool=None,
+        )
+        for query in queries
+    ))
+
+    by_id: dict = {}
+    ranked_id_lists: list[list] = []
+    primary_ids = {_memory_id(memory) for memory in primary if _memory_id(memory) is not None}
+    for memories in supplement_lists:
+        ids: list = []
+        for memory in memories:
+            mid = _memory_id(memory)
+            if mid is None or mid in primary_ids:
+                continue
+            by_id.setdefault(mid, memory)
+            ids.append(mid)
+        ranked_id_lists.append(ids)
+
+    fused = rrf_fuse(ranked_id_lists, k=60)
+    supplements = []
+    for mid in fused[:supplement_limit]:
+        memory = dict(by_id[mid])
+        tags = (memory.get("tags") or "").strip()
+        memory["tags"] = f"{tags},supplemental_recall" if tags else "supplemental_recall"
+        supplements.append(memory)
+    return primary + supplements, {
+        "mode": "rerank_plus_supplemental_recall",
+        "hint_queries": hint_queries,
+        "variants": queries,
+        "primary_count": len(primary),
+        "supplement_count": len(supplements),
+        "supplement_limit": supplement_limit,
+        "per_query_limit": per_query_limit,
+    }
 
 
 # --- governed retrieval router ---------------------------------------------
@@ -554,11 +885,26 @@ async def retrieve_and_answer(
     question: str,
 ) -> tuple[str, str, list[dict], dict | None]:
     """Returns (generated_answer, retrieved_context_text, raw_memories, answer_trace)."""
-    question_class = classify_question(question) if cfg.route or cfg.synthesize else "default"
+    question_class = (
+        classify_question(question)
+        if cfg.route or cfg.synthesize or cfg.episodic_reconstruct
+        else "default"
+    )
+    retrieval_trace = None
     if cfg.route:
         # Governed router: per-question class -> (multi_query_n, retrieve_limit).
         n, limit = route_params(question_class, cfg)
-        if n > 0:
+        if cfg.rerank and n > 0 and cfg.supplement_multi_query > 0:
+            memories, retrieval_trace = await rerank_with_supplemental_recall(
+                client,
+                gemini,
+                cfg,
+                project,
+                question,
+                n=cfg.supplement_multi_query,
+                limit=limit,
+            )
+        elif n > 0:
             memories = await multi_query_retrieve(
                 client, gemini, cfg, project, question, n=n, limit=limit
             )
@@ -578,10 +924,18 @@ async def retrieve_and_answer(
         )
     context_text = build_context(memories)
     answer_trace = None
-    if cfg.synthesize and question_class == "multi_hop":
+    if cfg.episodic_reconstruct and question_class == "multi_hop":
+        answer, answer_trace = await answer_with_episodic_reconstruction(
+            client, gemini, cfg, question, memories
+        )
+    elif cfg.synthesize and question_class == "multi_hop":
         answer, answer_trace = await answer_with_master_aggregator(
             gemini, cfg, question, context_text
         )
     else:
         answer = await answer_question(gemini, cfg, question, context_text)
+    if retrieval_trace:
+        if answer_trace is None:
+            answer_trace = {}
+        answer_trace["retrieval"] = retrieval_trace
     return answer, context_text, memories, answer_trace

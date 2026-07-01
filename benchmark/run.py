@@ -213,6 +213,9 @@ def write_output(strategy, results, counts, rows, cfg, args) -> Path:
         "answer_prompt_version": cfg.answer_prompt_version,
         "synthesize": cfg.synthesize,
         "synthesis_model": cfg.synthesis_model if cfg.synthesize else None,
+        "episodic_reconstruct": cfg.episodic_reconstruct,
+        "episodic_episode_limit": cfg.episodic_episode_limit,
+        "episodic_max_original_chars": cfg.episodic_max_original_chars,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "harness_version": __version__,
         "overall_scope": "categories 1-5" if args.include_adversarial else "categories 1-4 (adversarial excluded)",
@@ -285,6 +288,24 @@ def parse_args(argv=None) -> argparse.Namespace:
                         "aggregator before scoring; other classes use the normal answerer")
     p.add_argument("--synthesis-model", default=None,
                    help="model for the synthesis step (default: answerer model)")
+    p.add_argument(
+        "--episodic-reconstruct",
+        action="store_true",
+        help="for multi-hop/list questions, fetch source-backed episodes, extract "
+             "question-relevant evidence, then answer from that evidence",
+    )
+    p.add_argument(
+        "--episodic-episode-limit",
+        type=int,
+        default=None,
+        help="max retrieved memories to expand for episodic reconstruction",
+    )
+    p.add_argument(
+        "--episodic-max-original-chars",
+        type=int,
+        default=None,
+        help="max chars of original/source text per expanded memory",
+    )
     p.add_argument("--vertex-project", default=None, help="override GCP project for Vertex AI")
     p.add_argument("--vertex-location", default=None, help="override Vertex AI region")
     p.add_argument("--include-adversarial", action="store_true", help="count category 5 in overall")
@@ -310,6 +331,23 @@ def parse_args(argv=None) -> argparse.Namespace:
         help="expand the question into N variant queries and RRF-fuse per-variant retrieval (0 = off)",
     )
     p.add_argument(
+        "--supplement-multi-query",
+        type=int,
+        default=0,
+        help="for reranked routed questions, add N cheap non-reranked expansion queries after one CE rerank",
+    )
+    p.add_argument(
+        "--supplement-limit",
+        type=int,
+        default=None,
+        help="max supplemental memories appended after reranked retrieval (default from config)",
+    )
+    p.add_argument(
+        "--supplement-hints-only",
+        action="store_true",
+        help="use deterministic typed hint queries for supplements, skipping Gemini-generated variants",
+    )
+    p.add_argument(
         "--route",
         action="store_true",
         help="governed retrieval router: classify each question by text and pick per-question params",
@@ -330,6 +368,11 @@ def build_config(args) -> Config:
     cfg.answer_prompt_version = args.answer_prompt
     cfg.synthesize = args.synthesize
     cfg.synthesis_model = args.synthesis_model
+    cfg.episodic_reconstruct = args.episodic_reconstruct
+    if args.episodic_episode_limit is not None:
+        cfg.episodic_episode_limit = args.episodic_episode_limit
+    if args.episodic_max_original_chars is not None:
+        cfg.episodic_max_original_chars = args.episodic_max_original_chars
     if args.concurrency:
         cfg.max_concurrency = args.concurrency
     if args.retrieve_limit:
@@ -338,6 +381,11 @@ def build_config(args) -> Config:
         cfg.pool = args.pool
     if args.multi_query:
         cfg.multi_query = args.multi_query
+    if args.supplement_multi_query:
+        cfg.supplement_multi_query = args.supplement_multi_query
+    if args.supplement_limit is not None:
+        cfg.supplement_limit = args.supplement_limit
+    cfg.supplement_hints_only = args.supplement_hints_only
     cfg.route = args.route
     if args.vertex_project:
         cfg.vertex_project = args.vertex_project
