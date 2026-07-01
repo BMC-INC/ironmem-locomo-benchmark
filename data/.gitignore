@@ -1,0 +1,3 @@
+# Track this directory but never commit the dataset itself.
+*
+!.gitignore
