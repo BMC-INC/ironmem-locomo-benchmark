@@ -83,6 +83,32 @@ def _wanted_question_ids(
     return wanted
 
 
+def _question_ids_from_file(path: Path) -> set[str]:
+    data = _load_json(path)
+    ids: set[str] = set()
+    if isinstance(data, dict):
+        if isinstance(data.get("rows"), list):
+            for row in data["rows"]:
+                qid = row.get("question_id") if isinstance(row, dict) else None
+                if qid:
+                    ids.add(str(qid))
+        elif isinstance(data.get("entries"), list):
+            for entry in data["entries"]:
+                join_key = entry.get("join_key") if isinstance(entry, dict) else None
+                qid = join_key.get("question_id") if isinstance(join_key, dict) else None
+                if qid:
+                    ids.add(str(qid))
+    elif isinstance(data, list):
+        for item in data:
+            if isinstance(item, str):
+                ids.add(item)
+            elif isinstance(item, dict) and item.get("question_id"):
+                ids.add(str(item["question_id"]))
+    if not ids:
+        raise SystemExit(f"No question ids found in {path}")
+    return ids
+
+
 def _parse_qid(qid: str) -> tuple[str, int]:
     match = QID_RE.match(qid)
     if not match:
@@ -98,15 +124,18 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     if not isinstance(source, list):
         raise SystemExit("Source LoCoMo data must be a JSON list")
 
-    buckets = set(args.buckets) if args.buckets else None
-    categories = set(args.categories) if args.categories else None
-    wanted = _wanted_question_ids(
-        regression,
-        args.stable_wrong_sample,
-        args.seed,
-        buckets,
-        categories,
-    )
+    if args.question_ids:
+        wanted = _question_ids_from_file(_resolve(args.question_ids))
+    else:
+        buckets = set(args.buckets) if args.buckets else None
+        categories = set(args.categories) if args.categories else None
+        wanted = _wanted_question_ids(
+            regression,
+            args.stable_wrong_sample,
+            args.seed,
+            buckets,
+            categories,
+        )
     by_conv: dict[str, set[int]] = defaultdict(set)
     for qid in wanted:
         conv_id, idx = _parse_qid(qid)
@@ -192,6 +221,11 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         default=None,
         help="only include these category names, e.g. multi_hop single_hop",
+    )
+    parser.add_argument(
+        "--question-ids",
+        default=None,
+        help="JSON list, regression set, or retrieval audit containing question ids to include exactly",
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--force", action="store_true", help="Overwrite output if it already exists")

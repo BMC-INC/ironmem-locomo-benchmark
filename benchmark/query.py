@@ -549,7 +549,13 @@ async def retrieve_and_answer(
     elif cfg.multi_query > 0:
         memories = await multi_query_retrieve(client, gemini, cfg, project, question)
     else:
-        memories = await client.get_context(project, query=question, limit=cfg.retrieve_limit)
+        memories = await client.get_context(
+            project,
+            query=question,
+            limit=cfg.retrieve_limit,
+            rerank=cfg.rerank,
+            pool=cfg.pool,
+        )
     context_text = build_context(memories)
     answer_trace = None
     if cfg.synthesize and question_class == "multi_hop":
