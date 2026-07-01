@@ -37,6 +37,9 @@ retrieve limit 25, Gemini Pro answerer/judge, and cross-encoder rerank.
 | `canary_lost_gained_ce_sample12_gpu_p100_k25_v2agg_focus4d_20260701T103200Z.json` | no | 75.00% | 75.00% | 0 |
 | `canary_lost_gained_ce_sample12_gpu_p100_k25_v2agg_normhints_20260701T221457Z.json` | no | 91.67% | 91.67% | 0 |
 | `canary_lost_gained_ce_sample12_gpu_p100_k25_v2agg_normhints2_20260701T221457Z.json` | no | 100.00% | 100.00% | 0 |
+| `canary_lost_multi_hop49_gpu_p100_k25_v2agg_normhints2_20260701T221457Z.json` | no | 65.31% | 65.31% | 0 |
+| `canary_lost_multi_hop49_gpu_p100_k25_v2agg_normhints3_20260701T221457Z.json` | no | 81.63% | 81.63% | 0 |
+| `canary_lost_multi_hop49_gpu_p100_k25_v2agg_normhints3_supp8_20260701T221457Z.json` | no | 81.63% | 81.63% | 0 |
 
 ## Decision
 
@@ -57,10 +60,16 @@ python -m benchmark.run --strategy hybrid --skip-ingest --rerank \
   --output results/<run_name>.json
 ```
 
-The `normhints2` canary reached 100.00% after adding bare instrument hints such
-as `violin`, `playing violin`, and `me-time activities`, and after seeding the
-top unique hit from each deterministic hint before RRF fills remaining
-supplemental slots.
+The `normhints2` 12-question canary reached 100.00% after adding bare
+instrument hints such as `violin`, `playing violin`, and `me-time activities`,
+and after seeding the top unique hit from each deterministic hint before RRF
+fills remaining supplemental slots.
+
+The broader 49-question multi-hop gate improved from 65.31% to 81.63% after
+adding deterministic normalizers and typed hints for commonality, volunteering,
+faith actions, writing categories, collections/authors, dog activities, healthy
+meals, painting subjects, health scares, and car preferences. Raising
+`--supplement-limit` from 4 to 8 did not improve that gate.
 
 ## Next build target
 
@@ -73,5 +82,7 @@ Canary gate for future work:
 
 - Must beat the 100.00% 12-question GPU canary on a broader flip-set canary
   before a full Pro run.
+- Do not launch the full Pro run from the current state: the 49-question gate is
+  improved but still leaves 9 multi-hop misses.
 - Must not regress the recovered `supphints4` wins.
 - Must preserve every run artifact for later training/eval use.
