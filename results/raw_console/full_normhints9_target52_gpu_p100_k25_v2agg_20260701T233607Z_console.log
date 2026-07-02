@@ -1,0 +1,19 @@
+IronMem LoCoMo — 10 conversation(s), 52 question(s) | answerer=gemini-2.5-pro 
+judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+strategies=['hybrid']
+server ok: 29867 memories, 61229 observations | embedder: unknown
+rerank backend: cross_encoder | cross_encoder_ready=True
+eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━━━━━ 52/52 • 0:01:42 eta 0:00:00
+   LoCoMo — IronMem   judge-scored   
+┏━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
+┃ category    ┃ accuracy ┃        n ┃
+┡━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
+│ single_hop  │    97.0% │       33 │
+│ multi_hop   │   100.0% │        9 │
+│ open_domain │   100.0% │        6 │
+│ temporal    │   100.0% │        4 │
+│ overall     │    98.1% │ cats 1-4 │
+└─────────────┴──────────┴──────────┘
+→ results written to 
+/opt/bench/results/full_normhints9_target52_gpu_p100_k25_v2agg_20260701T233607Z.
+json

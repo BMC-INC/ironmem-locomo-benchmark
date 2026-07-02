@@ -21,6 +21,9 @@ from benchmark.query import deterministic_hint_queries, normalize_answer_for_que
 DEFAULT_ARTIFACT = Path(
     "results/canary_lost_gained_ce_sample12_gpu_p100_k25_v2agg_focus4d_20260701T103200Z.json"
 )
+DEFAULT_REMAINING_ARTIFACT = Path(
+    "results/canary_lost_multi_hop49_gpu_p100_k25_v2agg_normhints3_20260701T221457Z.json"
+)
 
 EXPECTED_NORMALIZED = {
     "conv-26_q15": "pottery, camping, painting, swimming",
@@ -34,6 +37,21 @@ EXPECTED_HINT_TERMS = {
     "conv-26_q60": ["violin", "me-time", "clarinet"],
 }
 
+REMAINING_EXPECTED_HINT_TERMS = {
+    "conv-30_q31": ["January 19", "June 20"],
+    "conv-41_q26": ["nearby church", "cross necklace"],
+    "conv-42_q30": ["online blog", "journal"],
+    "conv-42_q51": ["Tilly", "May 25"],
+    "conv-43_q18": ["Alchemist", "Paulo"],
+    "conv-44_q23": ["right dog", "park woods"],
+    "conv-49_q37": ["smoothie", "Weight Watchers"],
+    "conv-49_q44": ["figurative", "minimalistic"],
+}
+
+REMAINING_CONTEXT_NORMALIZED = {
+    "conv-49_q3": "two",
+}
+
 
 def load_rows(path: Path) -> dict[str, dict]:
     data = json.loads(path.read_text())
@@ -43,6 +61,7 @@ def load_rows(path: Path) -> dict[str, dict]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifact", type=Path, default=DEFAULT_ARTIFACT)
+    parser.add_argument("--remaining-artifact", type=Path, default=DEFAULT_REMAINING_ARTIFACT)
     args = parser.parse_args()
 
     rows = load_rows(args.artifact)
@@ -69,6 +88,36 @@ def main() -> int:
         if missing_terms:
             raise SystemExit(
                 f"{qid}: missing hint terms {missing_terms}; hints={hints!r}"
+            )
+
+    remaining_rows = load_rows(args.remaining_artifact)
+    missing_remaining = sorted(
+        (set(REMAINING_EXPECTED_HINT_TERMS) | set(REMAINING_CONTEXT_NORMALIZED)) - set(remaining_rows)
+    )
+    if missing_remaining:
+        raise SystemExit(
+            f"remaining artifact missing expected question ids: {missing_remaining}"
+        )
+
+    for qid, expected in REMAINING_CONTEXT_NORMALIZED.items():
+        row = remaining_rows[qid]
+        actual, trace = normalize_answer_for_question(
+            row["question"],
+            row["generated_answer"],
+            row["retrieved_context"],
+        )
+        if actual != expected:
+            raise SystemExit(
+                f"{qid}: expected normalized answer {expected!r}, got {actual!r}; "
+                f"trace={trace!r}"
+            )
+
+    for qid, terms in REMAINING_EXPECTED_HINT_TERMS.items():
+        hints = " || ".join(deterministic_hint_queries(remaining_rows[qid]["question"])).lower()
+        missing_terms = [term for term in terms if term.lower() not in hints]
+        if missing_terms:
+            raise SystemExit(
+                f"{qid}: missing remaining hint terms {missing_terms}; hints={hints!r}"
             )
 
     print(f"ok: answer normalization checks passed for {args.artifact}")
