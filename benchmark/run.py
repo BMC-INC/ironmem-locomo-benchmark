@@ -26,10 +26,10 @@ from rich.table import Table
 from . import __version__
 from .config import (CATEGORY_MAP, DEFAULT_ANSWERER_MODEL,
                      DEFAULT_JUDGE_MODEL, REPO_ROOT, Config)
-from .gemini import GeminiClient
 from .ingest import ingest_conversation, load_conversations, total_sessions
 from .ironmem_client import IronMemClient
 from .judge import judge_answer
+from .llm import close_llm_client, create_llm_client, selected_backend
 from .query import retrieve_and_answer
 
 console = Console()
@@ -37,7 +37,7 @@ DEFAULT_DATA = REPO_ROOT / "data" / "locomo10.json"
 
 
 class Clients:
-    def __init__(self, ironmem: IronMemClient, gemini: GeminiClient) -> None:
+    def __init__(self, ironmem: IronMemClient, gemini) -> None:
         self.ironmem = ironmem
         self.gemini = gemini
 
@@ -210,6 +210,7 @@ def write_output(strategy, results, counts, rows, cfg, args) -> Path:
         "ingest_strategy": strategy,
         "answerer_model": cfg.answerer_model,
         "judge_model": cfg.judge_model,
+        "llm_backend": selected_backend(),
         "answer_prompt_version": cfg.answer_prompt_version,
         "synthesize": cfg.synthesize,
         "synthesis_model": cfg.synthesis_model if cfg.synthesize else None,
@@ -415,14 +416,13 @@ async def amain(args) -> int:
 
     strategies = ["session", "hybrid"] if args.strategy == "both" else [args.strategy]
 
-    # Vertex AI Gemini client (ADC auth). Construct early so a bad project /
-    # missing credentials fail fast with a clear message before any ingest.
+    backend = selected_backend()
     try:
-        gemini_client = GeminiClient(cfg)
+        gemini_client = create_llm_client(cfg, backend)
     except Exception as exc:
         console.print(
-            f"[red]Could not initialize Vertex AI client ({type(exc).__name__}: {exc}).\n"
-            f"Run: gcloud auth application-default login --project={cfg.vertex_project}[/red]"
+            f"[red]Could not initialize {backend} LLM client "
+            f"({type(exc).__name__}: {exc}).[/red]"
         )
         return 2
 
@@ -430,49 +430,52 @@ async def amain(args) -> int:
     console.print(
         f"[bold]IronMem LoCoMo[/bold] — {len(conversations)} conversation(s), {nq} question(s) | "
         f"answerer={cfg.answerer_model} judge={cfg.judge_model} | "
-        f"vertex={cfg.vertex_project}/{cfg.vertex_location} | strategies={strategies}"
+        f"backend={backend} | strategies={strategies}"
     )
 
-    async with httpx.AsyncClient(timeout=cfg.request_timeout) as http:
-        clients = Clients(IronMemClient(cfg, http), gemini_client)
+    try:
+        async with httpx.AsyncClient(timeout=cfg.request_timeout) as http:
+            clients = Clients(IronMemClient(cfg, http), gemini_client)
 
-        try:
-            status = await clients.ironmem.status()
-        except Exception as exc:
-            console.print(f"[red]Cannot reach IronMem at {cfg.ironmem_url}: {exc}[/red]")
-            return 2
-        emb = embedder_info()
-        console.print(
+            try:
+                status = await clients.ironmem.status()
+            except Exception as exc:
+                console.print(f"[red]Cannot reach IronMem at {cfg.ironmem_url}: {exc}[/red]")
+                return 2
+            emb = embedder_info()
+            console.print(
             f"[dim]server ok: {status.get('memories')} memories, "
             f"{status.get('observations')} observations | embedder: {emb or 'unknown'}[/dim]"
         )
-        rerank_status = status.get("rerank") or {}
-        if rerank_status:
-            console.print(
+            rerank_status = status.get("rerank") or {}
+            if rerank_status:
+                console.print(
                 f"[dim]rerank backend: {rerank_status.get('backend', 'unknown')} | "
                 f"cross_encoder_ready={rerank_status.get('cross_encoder_ready', False)}[/dim]"
             )
-        if args.require_cross_encoder:
-            if (
+            if args.require_cross_encoder:
+                if (
                 str(rerank_status.get("backend", "")).lower() != "cross_encoder"
                 or not rerank_status.get("cross_encoder_ready")
             ):
-                console.print(
+                    console.print(
                     "[red]Cross-encoder required but not active. Set "
                     "IRONMEM_RERANK_BACKEND=cross_encoder, restart IronMem, and verify /status.[/red]"
                 )
-                return 2
-        if emb and emb.lower().startswith("none"):
-            console.print("[yellow]⚠ embedder is 'none' — /context retrieval is keyword-only. "
-                          "Deploy the local-onnx IronMem build for semantic retrieval.[/yellow]")
+                    return 2
+            if emb and emb.lower().startswith("none"):
+                console.print("[yellow]⚠ embedder is 'none' — /context retrieval is keyword-only. "
+                              "Deploy the local-onnx IronMem build for semantic retrieval.[/yellow]")
 
-        for strategy in strategies:
-            if not args.skip_ingest:
-                await run_ingest(clients, cfg, conversations, strategy, wipe=args.wipe)
-            rows = await run_eval(clients, cfg, conversations, strategy, args.include_adversarial)
-            results, counts = aggregate(rows, args.include_adversarial)
-            path = write_output(strategy, results, counts, rows, cfg, args)
-            print_summary(strategy, results, counts, rows, path, args.include_adversarial)
+            for strategy in strategies:
+                if not args.skip_ingest:
+                    await run_ingest(clients, cfg, conversations, strategy, wipe=args.wipe)
+                rows = await run_eval(clients, cfg, conversations, strategy, args.include_adversarial)
+                results, counts = aggregate(rows, args.include_adversarial)
+                path = write_output(strategy, results, counts, rows, cfg, args)
+                print_summary(strategy, results, counts, rows, path, args.include_adversarial)
+    finally:
+        await close_llm_client(gemini_client)
 
     return 0
 
