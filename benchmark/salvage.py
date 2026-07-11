@@ -31,9 +31,9 @@ from rich.console import Console
 
 from . import __version__
 from .config import CATEGORY_MAP
-from .gemini import GeminiClient
 from .ingest import load_conversations
 from .ironmem_client import IronMemClient
+from .llm import close_llm_client, create_llm_client, selected_backend
 from .run import Clients, REPO_ROOT, _progress, aggregate, build_config, eval_one
 
 console = Console()
@@ -68,10 +68,16 @@ def _args_for(meta: dict, a) -> SimpleNamespace:
         answer_prompt=a.answer_prompt or meta.get("answer_prompt_version") or "v1",
         synthesize=meta.get("synthesize", False) if a.synthesize is None else a.synthesize,
         synthesis_model=meta.get("synthesis_model"),
+        episodic_reconstruct=meta.get("episodic_reconstruct", False),
+        episodic_episode_limit=meta.get("episodic_episode_limit"),
+        episodic_max_original_chars=meta.get("episodic_max_original_chars"),
         concurrency=a.concurrency,
         retrieve_limit=a.retrieve_limit,
         pool=a.pool,
         multi_query=a.multi_query,
+        supplement_multi_query=0,
+        supplement_limit=None,
+        supplement_hints_only=False,
         route=a.route,
         vertex_project=a.vertex_project,
         vertex_location=a.vertex_location,
@@ -80,22 +86,22 @@ def _args_for(meta: dict, a) -> SimpleNamespace:
 
 
 async def _reanswer(cfg, conversations, items, strategy: str) -> list[dict]:
-    async with httpx.AsyncClient(timeout=cfg.request_timeout) as http:
-        clients = Clients(IronMemClient(cfg, http), GeminiClient(cfg))
-        try:
+    llm = create_llm_client(cfg)
+    try:
+        async with httpx.AsyncClient(timeout=cfg.request_timeout) as http:
+            clients = Clients(IronMemClient(cfg, http), llm)
             status = await clients.ironmem.status()
             console.print(f"[dim]server ok: {status.get('memories')} memories, "
                           f"{status.get('observations')} observations[/dim]")
-        except Exception as exc:
-            console.print(f"[red]Cannot reach IronMem: {exc}[/red]")
-            raise
-        sem = asyncio.Semaphore(cfg.max_concurrency)
-        with _progress() as progress:
-            task = progress.add_task(f"salvage judge={cfg.judge_model}", total=len(items))
-            rows = await asyncio.gather(*(
-                eval_one(clients, cfg, sem, conv, i, qa, strategy, False, progress, task)
-                for conv, i, qa in items
-            ))
+            sem = asyncio.Semaphore(cfg.max_concurrency)
+            with _progress() as progress:
+                task = progress.add_task(f"salvage judge={cfg.judge_model}", total=len(items))
+                rows = await asyncio.gather(*(
+                    eval_one(clients, cfg, sem, conv, i, qa, strategy, False, progress, task)
+                    for conv, i, qa in items
+                ))
+    finally:
+        await close_llm_client(llm)
     return list(rows)
 
 
@@ -163,6 +169,7 @@ def main(argv=None) -> int:
         "salvage_reanswered": len(new_rows),
         "salvage_still_errored": len(still_err),
         "harness_version": __version__,
+        "llm_backend": selected_backend(),
     })
 
     out = Path(a.output) if a.output else src.with_name(src.stem + "_SALVAGED.json")

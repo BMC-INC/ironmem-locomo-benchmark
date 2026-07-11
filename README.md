@@ -79,7 +79,8 @@ IronMem tracks all of these. Every memory in the benchmark corpus carries govern
 
 - Python 3.11+
 - Running IronMem server (`ironmem serve`, default port 37778)
-- Google Cloud ADC with Vertex AI access (Gemini 2.5 Pro/Flash)
+- One supported LLM backend: Vertex AI with Google Cloud ADC (default), Azure
+  OpenAI with Managed Identity, or public OpenAI with an API key
 - LoCoMo dataset (`data/locomo10.json` from [snap-research/locomo](https://github.com/snap-research/locomo))
 
 ### Setup
@@ -113,6 +114,35 @@ python scripts/judge_agreement.py results/your_run_name.json \
   --output results/judge_agreement_your_run.json
 ```
 
+### Azure OpenAI / OpenAI backend
+
+The same ingest, answer, judge, salvage, and judge-agreement paths use the
+backend selected by `BENCH_LLM`. Azure model values are deployment names.
+
+```bash
+# Azure VM with a system-assigned Managed Identity and the
+# Cognitive Services OpenAI User role. No API key is needed.
+export BENCH_LLM=openai
+export AZURE_OPENAI_ENDPOINT=https://YOUR-RESOURCE.openai.azure.com
+export AZURE_OPENAI_API_VERSION=2024-10-21
+export OPENAI_ANSWERER_MODEL=YOUR-ANSWERER-DEPLOYMENT
+export OPENAI_JUDGE_MODEL=YOUR-JUDGE-DEPLOYMENT
+
+python -m benchmark.run --strategy hybrid --skip-ingest \
+  --pool 100 --retrieve-limit 25 --concurrency 6 \
+  --answer-prompt v2 --output results/azure_run.json
+
+# Public OpenAI alternative
+export BENCH_LLM=openai
+export OPENAI_API_KEY=...
+export OPENAI_ANSWERER_MODEL=gpt-4.1
+export OPENAI_JUDGE_MODEL=gpt-4.1
+```
+
+Every output records `llm_backend`, `answerer_model`, and `judge_model` so
+results from different providers cannot be mistaken for an apples-to-apples
+comparison.
+
 ### Analysis
 
 ```bash
@@ -139,6 +169,8 @@ ironmem-locomo-benchmark/
     ingest.py           # LoCoMo -> IronMem ingestion
     judge.py            # LLM judge scoring
     gemini.py           # Vertex AI Gemini client
+    openai_client.py    # Azure MI / OpenAI-compatible client
+    llm.py              # Backend selection + model mapping
     ironmem_client.py   # IronMem server HTTP client
     config.py           # Run config + model/region defaults
   scripts/

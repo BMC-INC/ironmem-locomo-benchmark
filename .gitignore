@@ -21,4 +21,5 @@ venv/
 
 # Keep results committed for reproducibility, but ignore scratch runs
 /results/_scratch/
+/results/raw_console/*.pid
 *.pyc

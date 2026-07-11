@@ -22,11 +22,9 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import httpx  # noqa: E402
-
 from benchmark.config import Config  # noqa: E402
-from benchmark.gemini import GeminiClient  # noqa: E402
 from benchmark.judge import judge_answer  # noqa: E402
+from benchmark.llm import close_llm_client, create_llm_client, selected_backend  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -68,7 +66,7 @@ async def amain(args) -> int:
     if args.sample and len(rows) > args.sample:
         rows = random.sample(rows, args.sample)
 
-    gemini = GeminiClient(cfg)
+    gemini = create_llm_client(cfg)
     clients = _Clients(gemini)
     sem = asyncio.Semaphore(cfg.max_concurrency)
 
@@ -84,7 +82,10 @@ async def amain(args) -> int:
                 return {**r, "second_score": None, "second_error": f"{type(exc).__name__}: {exc}"}
         return {**r, "second_score": s2}
 
-    judged = await asyncio.gather(*(rejudge(r) for r in rows))
+    try:
+        judged = await asyncio.gather(*(rejudge(r) for r in rows))
+    finally:
+        await close_llm_client(gemini)
     judged = [r for r in judged if r.get("second_score") is not None]
 
     a = sum(1 for r in judged if r["score"] == 1 and r["second_score"] == 1)
@@ -101,6 +102,7 @@ async def amain(args) -> int:
         "source": str(src),
         "headline_judge": data.get("judge_model"),
         "second_judge": args.judge_model,
+        "llm_backend": selected_backend(),
         "sample_n": n,
         "raw_agreement_pct": agree,
         "cohens_kappa": kappa,
