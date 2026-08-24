@@ -1,6 +1,6 @@
 # IronMem LoCoMo Benchmark
 
-Reproducible evaluation of [IronMem](https://github.com/BMC-INC/Iron-Mem) on the [LoCoMo](https://github.com/snap-research/locomo) long-term conversational memory benchmark (Maharana et al., ACL 2024).
+Reproducible evaluation of [IronMem](https://github.com/BMC-INC/Iron-mem) on the [LoCoMo](https://github.com/snap-research/locomo) long-term conversational memory benchmark (Maharana et al., ACL 2024).
 
 IronMem is the only memory system where every recalled memory carries writer identity, trust tier, classification, and a tamper-evident ledger entry.
 
