@@ -6,72 +6,99 @@ IronMem is the only memory system where every recalled memory carries writer ide
 
 ## Results
 
-All runs use the live IronMem memory store (28,554+ memories, 10 LoCoMo conversations, 1,986 questions of which 1,540 are scored). Pro = Gemini 2.5 Pro answerer + judge. Flash = Gemini 2.5 Flash. Config: hybrid retrieval, pool 100, retrieve-limit 25, skip-ingest (pre-loaded corpus), 0 errors.
+The benchmark evaluates 10 LoCoMo conversations and 1,986 questions, of which 1,540 questions in categories 1-4 are scored. The 446 adversarial questions in category 5 are logged but excluded from the headline accuracy. Pro = Gemini 2.5 Pro answerer + judge. Flash = Gemini 2.5 Flash.
 
-Question accounting: the LoCoMo corpus is 1,986 questions. Categories 1 to 4 (single_hop, multi_hop, temporal, open_domain) total 1,540 scored questions. The 446 adversarial questions (category 5) are logged but excluded from scoring, so every overall accuracy below is over the 1,540 scored set.
+### Headline: 72.4% Pro-judged record run (2026-07-01)
 
-### Headline: V2 Pro-judged (2026-06-27)
+`results/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z.json`
+
+Verified full-corpus record run using Gemini 2.5 Pro as answerer and judge, hybrid retrieval, pool 100, retrieve-limit 25, synthesis/aggregation, deterministic normalized-hint recall supplements, and the GPU-ready cross-encoder path. The run processed all 1,986 questions and completed with the live IronMem store at 29,867 memories and 61,229 observations.
+
+| Category | Score | n |
+|---|---:|---:|
+| single_hop | 77.2% | 841 |
+| multi_hop | 58.2% | 282 |
+| temporal | 77.0% | 321 |
+| open_domain | 57.3% | 96 |
+| **Overall** | **72.4%** | **1,540 scored** |
+
+The raw console artifact for the record run is committed at `results/raw_console/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z_console.log`.
+
+### Earlier locked baselines
+
+The June 27 V2 baseline remains in the repository as an immutable comparison point:
 
 `results/upg8_PRO_p100_k25_v2.json` (Pro answerer + Pro judge, hybrid, p100/k25, v2 answer prompt, skip-ingest, error_count 0).
 
 | Category | Score | n |
-|---|---|---|
+|---|---:|---:|
 | single_hop | 69.6% | 841 |
 | multi_hop | 50.4% | 282 |
 | temporal | 76.0% | 321 |
 | open_domain | 45.8% | 96 |
 | **Overall** | **65.9%** | **1,540 scored** |
 
-Judge independence: Flash 2nd-judge Cohen's kappa = 0.88, 94.5% raw agreement on an n=200 sample. On that sample the Pro judge agreed with gold 63.5% of the time and the Flash judge 62.0% (`results/judge_agreement_PRO_v2.json`).
-
-<!-- PLACEHOLDER: upg9 synthesis results go here when validated. Synthesis answerer is built but not yet validated against this baseline. -->
+Judge independence on the V2 baseline: Flash 2nd-judge Cohen's kappa = 0.88, 94.5% raw agreement on an n=200 sample. On that sample the Pro judge agreed with gold 63.5% of the time and the Flash judge 62.0% (`results/judge_agreement_PRO_v2.json`).
 
 ### Run History
 
 | Run | Config | Overall | multi_hop | temporal | Judge | File |
-|---|---|---|---|---|---|---|
+|---|---|---:|---:|---:|---|---|
+| **Record run** | Pro/Pro, hybrid, p100/k25, v2 aggregation + synthesis + normalized-hint supplements, cross-encoder ready | **72.4%** | **58.2%** | **77.0%** | Pro | `results/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z.json` |
+| Governance-off | Pro/Pro, hybrid, p100/k25, governance retrieval weights disabled | 68.4% | -- | -- | Pro | `results/upg13_PRO_p100_k25_v2_govoff.json` |
+| Governed parity | Pro/Pro, hybrid, p100/k25 | 66.3% | -- | -- | Pro | `results/upg11_PRO_p100_k25_v2_parity.json` |
+| V2 baseline | Pro/Pro, hybrid, p100/k25, v2 prompt | 65.9% | 50.4% | 76.0% | Pro, kappa 0.88 | `results/upg8_PRO_p100_k25_v2.json` |
 | V1 | Pro/Pro, hybrid, p100/k25, v1 prompt | 65.9% | 47.2% | 78.5% | Pro, kappa 0.80 | `results/upg6_PRO_p100_k25.json` |
-| V2 (headline) | Pro/Pro, hybrid, p100/k25, v2 prompt | 65.9% | 50.4% | 76.0% | Pro, kappa 0.88 | `results/upg8_PRO_p100_k25_v2.json` |
 | Flash baseline | Flash/Flash, hybrid, p100/k25 | 60.7% | 42.6% | 67.3% | Flash | `results/upg_validation_fullstack_flash_p100_k25.json` |
 | Prior Pro | Pro/Pro, hybrid, pool 50 + rerank | 60.9% | -- | -- | Pro | `results/upg3_PRO_C_rerank_pool50.json` |
 
-V2 vs V1: same overall (65.9%), better-shaped on the hard categories. multi_hop +3.2pp and open_domain +2.0pp, paid for by temporal -2.5pp and single_hop -0.3pp. The answer prompt is a maxed lateral lever: it redistributes accuracy across categories at net zero overall (roughly 114 questions rescued, 114 regressed).
+The progression matters: prompt tuning alone redistributed accuracy without changing the V2 overall score. The later gains came from retrieval and answer-construction work: synthesis/aggregation, broader evidence recovery, multi-hop normalization, deterministic recall supplements, and the cross-encoder-capable retrieval path.
 
 ## Methodology
 
 ### Retrieval Stack
 
-IronMem hybrid retrieval pipeline:
+IronMem hybrid retrieval pipeline includes:
 - Full-text search (SQLite FTS5) + vector embeddings (bge-small-en-v1.5)
 - Reciprocal Rank Fusion (RRF) to merge FTS + vector candidate lists
-- LLM reranker over the fused pool (cross-encoder backend built but GPU-gated, not active in these runs)
-- Temporal knowledge graph with provenance edges and supersession tracking
-- Content-addressed deduplication (CCR, 75.1% compression)
+- Routed weighted fusion and query decomposition
+- Temporal and graph recall with provenance-aware edges
+- Entity alias expansion and temporal conflict handling
+- Structured-evidence reranking and rerank re-anchoring
+- Local cross-encoder reranking when available
+- Multi-hop synthesis / answer aggregation
+- Deterministic normalized-hint recall supplements used by the 72.4% record run
+- Content-addressed deduplication and source-backed recovery through IronMem CCR
 
 ### Corpus
 
-10 LoCoMo conversations ingested via the hybrid strategy (session compression + graph/entity enrichment). The corpus is the live IronMem production store, not a benchmark-only snapshot. Live store at eval time: ~28,554 memories, 3,836 graph edges, 36,735 chunks, CCR compression 75.1%.
+The benchmark uses the live IronMem memory store rather than a benchmark-only memory implementation. Earlier locked runs used a store of approximately 28,554 memories, 3,836 graph edges, and 36,735 chunks with CCR compression of 75.1%. The July 1 record run executed against a later live store containing 29,867 memories and 61,229 observations.
 
 ### Evaluation Protocol
 
-1. Pre-loaded corpus (`--skip-ingest`). No re-ingestion between runs.
-2. Answerer generates a response from retrieved context.
-3. LLM judge scores the response against the gold answer (CORRECT / WRONG).
-4. A second judge (different model) scores the same responses for independence verification (Cohen's kappa).
-5. Error-count gate: any run with errors > 0 (for example 429 throttles) is discarded.
+1. Run against a pre-loaded IronMem corpus; no benchmark-only retrieval implementation replaces the live server.
+2. Retrieve context from IronMem using the configured retrieval stack.
+3. The answerer generates a response from retrieved evidence.
+4. The LLM judge scores the response against the gold answer (CORRECT / WRONG).
+5. Categories 1-4 are scored; category 5 adversarial questions are logged but excluded from headline accuracy.
+6. Runs preserve model, backend, retrieval configuration, output JSON, and console artifacts so results can be audited and compared.
+7. Runs with infrastructure errors are not treated as valid headline evaluations.
 
-### Governed Recall (what benchmarks do not measure)
+### Governed Recall (what standard benchmarks do not measure)
 
-Standard memory benchmarks measure retrieval quality: did the system recall the right answer? They do not measure:
+Standard memory benchmarks primarily measure answer or retrieval quality: did the system recall enough information to answer correctly? They do not measure several properties required for durable agent memory:
 
 - **Writer identity:** Who recorded this memory?
 - **Trust tier:** How reliable is this memory?
-- **Provenance:** Can you trace this answer back to the original evidence?
-- **Classification:** Is this memory PHI / PII / confidential?
-- **Legal hold:** Can this memory be deleted?
-- **Ledger integrity:** Is there a tamper-evident record of every memory mutation?
+- **Provenance:** Can the answer be traced back to original evidence?
+- **Classification:** Is the memory PHI / PII / confidential?
+- **Consent and retention:** Is the system allowed to retain or disclose it?
+- **Legal hold:** Can the memory be deleted?
+- **Contradiction state:** Does competing evidence remain unresolved?
+- **Influence policy:** Is this memory permitted to shape this task or action?
+- **Ledger integrity:** Is there a tamper-evident record of memory mutation?
 
-IronMem tracks all of these. Every memory in the benchmark corpus carries governance metadata. No other evaluated memory system does.
+IronMem tracks these properties alongside retrieval. Benchmark accuracy therefore measures only one dimension of the system.
 
 ## Reproducing
 
@@ -79,8 +106,7 @@ IronMem tracks all of these. Every memory in the benchmark corpus carries govern
 
 - Python 3.11+
 - Running IronMem server (`ironmem serve`, default port 37778)
-- One supported LLM backend: Vertex AI with Google Cloud ADC (default), Azure
-  OpenAI with Managed Identity, or public OpenAI with an API key
+- One supported LLM backend: Vertex AI with Google Cloud ADC (default), Azure OpenAI with Managed Identity, or public OpenAI with an API key
 - LoCoMo dataset (`data/locomo10.json` from [snap-research/locomo](https://github.com/snap-research/locomo))
 
 ### Setup
@@ -101,8 +127,10 @@ python -m benchmark.run --strategy hybrid --concurrency 8 \
 
 ### Run evaluation
 
+The harness exposes the retrieval, answer-prompt, synthesis, reranking, and normalization controls used throughout the committed run history. Reproduce a locked baseline first, then compare experimental configurations against the same corpus and judge.
+
 ```bash
-# Reproduce the V2 headline: Pro answerer + Pro judge, pool 100, retrieve-limit 25
+# Reproduce the locked V2 baseline: Pro answerer + Pro judge, pool 100, retrieve-limit 25
 python -m benchmark.run --strategy hybrid --skip-ingest \
   --pool 100 --retrieve-limit 25 --concurrency 8 \
   --answer-prompt v2 --vertex-location us-west1 \
@@ -114,10 +142,16 @@ python scripts/judge_agreement.py results/your_run_name.json \
   --output results/judge_agreement_your_run.json
 ```
 
+For the exact July 1 record-run evidence, see:
+
+- `results/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z.json`
+- `results/raw_console/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z_console.log`
+- `RUN_NOTE_2026-07-01_gpu_episodic_reconstruction.md`
+- `HANDOFF_2026-07-01_record_run_regression_harness.md`
+
 ### Azure OpenAI / OpenAI backend
 
-The same ingest, answer, judge, salvage, and judge-agreement paths use the
-backend selected by `BENCH_LLM`. Azure model values are deployment names.
+The same ingest, answer, judge, salvage, and judge-agreement paths use the backend selected by `BENCH_LLM`. Azure model values are deployment names.
 
 ```bash
 # Azure VM with a system-assigned Managed Identity and the
@@ -139,9 +173,7 @@ export OPENAI_ANSWERER_MODEL=gpt-4.1
 export OPENAI_JUDGE_MODEL=gpt-4.1
 ```
 
-Every output records `llm_backend`, `answerer_model`, and `judge_model` so
-results from different providers cannot be mistaken for an apples-to-apples
-comparison.
+Every output records `llm_backend`, `answerer_model`, and `judge_model` so results from different providers cannot be mistaken for an apples-to-apples comparison.
 
 ### Analysis
 
@@ -164,7 +196,7 @@ python scripts/pool_curve.py
 ironmem-locomo-benchmark/
   benchmark/
     run.py              # Main runner (ingest + answer + judge orchestration)
-    query.py            # Retrieval + answer generation
+    query.py            # Retrieval + answer generation / synthesis controls
     query_agentic.py    # Agentic answerer variant
     ingest.py           # LoCoMo -> IronMem ingestion
     judge.py            # LLM judge scoring
@@ -179,34 +211,48 @@ ironmem-locomo-benchmark/
     analyze_failures.py # Per-category / per-stage failure classification
     pool_curve.py       # Recall curve by pool size
     combine_results.py  # Merge / compare result files
+    audit_retrieval_floor.py
+    build_canary_dataset.py
+    build_flip_set.py
+    classify_flips.py
   data/
-    locomo10.json       # LoCoMo dataset (not committed, see Setup)
+    *.json              # Canary, regression, and targeted evaluation sets
   results/
     *.json              # Result files (committed)
     raw_console/        # Console logs for reproducibility
+    regression/         # Regression and flip-analysis artifacts
   RUN_NOTE_*.md         # Per-run methodology notes
+  HANDOFF_*.md          # Experiment and regression handoffs
   SYNTHESIS_ANSWERER_SPEC.md
 ```
 
 ## Levers (what we have learned)
 
-| Lever | Type | Status | Impact |
+| Lever | Type | Status | Observed / intended impact |
 |---|---|---|---|
-| Answer prompt tuning | Lateral (redistributes, net 0) | Maxed at V2 | multi_hop +3.2pp, open_domain +2.0pp; paid by temporal -2.5pp |
-| Synthesis answerer | multi_hop (the real lever) | Built, not yet validated | Target: multi_hop 50 -> 55-60% |
-| Cross-encoder reranker | Retrieval recall | Built, GPU-gated (`cross_encoder_ready: false`) | pool 150 sweet spot (~84% raw recall) |
-| Pool size | Retrieval recall | Settled at 100 (LLM rerank) / 150 (cross-encoder) | raw recall 73.2% @100, 83.9% @150, flat @200 |
-| open_domain | Extraction-capped | Low priority | much of open_domain gold is not in the source transcript |
+| Answer prompt tuning | Lateral | Maxed at V2 baseline | multi_hop +3.2pp and open_domain +2.0pp with net-zero overall vs V1 |
+| Synthesis / answer aggregation | Multi-hop reasoning | Active in record-run path | Helps combine gold-present evidence that retrieval alone cannot answer |
+| Cross-encoder reranker | Retrieval recall | Built and record-run ready | GPU record run reports `cross_encoder_ready=True` |
+| Pool/context size | Retrieval recall | Tuned | Earlier sweeps found ~84% raw recall around pool 150; record run uses p100/k25 |
+| Normalized-hint supplements | Deterministic recall recovery | Active in record run | Part of the path from the 65.9% V2 baseline to the 72.4% record run |
+| Regression/canary harness | Evaluation reliability | Built | Tracks rescued vs regressed questions before accepting broader changes |
+| open_domain | Extraction/source constrained | Lower priority | Some gold answers are not recoverable from source transcript evidence |
 
 ## Comparison with other systems
 
 | System | Benchmark | Overall | multi_hop | temporal | Governed |
-|---|---|---|---|---|---|
-| **IronMem** | LoCoMo (Pro judge) | **65.9%** | 50.4% | 76.0% | Yes |
-| Mem0 | LoCoMo (gpt-4o-mini judge) | 75.78%\* | 46.88%\* | 85.05%\* | No |
-| Supermemory | LongMemEval (recall metric) | 95% R@15\* | -- | 91%\* | No |
+|---|---|---:|---:|---:|---|
+| **IronMem** | LoCoMo (Gemini 2.5 Pro judge) | **72.4%** | **58.2%** | **77.0%** | **Yes** |
+| Mem0 | LoCoMo (gpt-4o-mini judge) | 75.78%* | 46.88%* | 85.05%* | No |
+| Supermemory | LongMemEval (recall metric) | 95% R@15* | -- | 91%* | No |
 
-\* Self-reported by those projects on different judge models and/or a different benchmark. Not independently reproduced here and not directly comparable. A clean comparison requires running each system on the same benchmark with the same judge. Of note, IronMem's multi_hop (50.4%) exceeds Mem0's reported multi_hop (46.88%) despite Mem0's higher reported overall on a more lenient judge model.
+\* Self-reported by those projects on different judge models and/or a different benchmark. These numbers are **not directly comparable**. A clean comparison requires running each system on the same corpus, question set, answerer, judge, scoring protocol, and retrieval constraints. IronMem publishes its harness and committed result artifacts so those comparisons can be reproduced rather than inferred from cross-paper headline numbers.
+
+## What the headline does not claim
+
+The 72.4% result is a LoCoMo result under the configuration described above. It is not claimed to be directly comparable to scores produced with different answerers, judges, benchmarks, retrieval budgets, or benchmark-specific preprocessing. The repository keeps earlier baselines and regression artifacts specifically so improvements can be examined against known configurations rather than only through a single headline number.
+
+Likewise, LoCoMo does not test IronMem's full governed-memory surface: source reversibility, provenance lineage, contradiction sets, inference quarantine, valid-time semantics, purpose-bound influence controls, consent/retention policy, and tamper-evident mutation history require separate evaluations.
 
 ## Citation
 
@@ -220,6 +266,7 @@ ironmem-locomo-benchmark/
 ```
 
 LoCoMo dataset citation:
+
 ```bibtex
 @inproceedings{maharana2024locomo,
   title={Evaluating Very Long-Term Conversational Memory of {LLM} Agents},
