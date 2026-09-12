@@ -1,7 +1,7 @@
 launching V2 final at Sat Jun 27 16:32:15 PDT 2026
 === [1/2] FINAL: Pro p100/k25, answer-prompt v2 (full 1986 q) ===
 IronMem LoCoMo — 10 conversation(s), 1986 question(s) | answerer=gemini-2.5-pro 
-judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+judge=gemini-2.5-pro | vertex=[redacted-project]/us-west1 |
 strategies=['hybrid']
 server ok: 28554 memories, 59859 observations | embedder: bge-small-en-v1.5 (dim
 384)
@@ -18,7 +18,7 @@ eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━ 1
 │ overall     │    65.9% │                cats 1-4 │
 └─────────────┴──────────┴─────────────────────────┘
 → results written to 
-/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg8_PRO_p100_k25_v2.
+~/Projects/ironmem-locomo-benchmark/results/upg8_PRO_p100_k25_v2.
 json
 === [2/2] JUDGE AGREEMENT: Flash 2nd judge, n=200 ===
 
@@ -31,6 +31,6 @@ json
   accuracy on sample — Pro: 63.5%  |  gemini-2.5-flash: 62.0%
   confusion     : both✓=120  pro✓/2nd✗=7  pro✗/2nd✓=4  both✗=69
 
-→ /Users/kingjames/Projects/ironmem-locomo-benchmark/results/judge_agreement_PRO_v2.json
+→ ~/Projects/ironmem-locomo-benchmark/results/judge_agreement_PRO_v2.json
 === DONE ===
 EXIT CODE: 0

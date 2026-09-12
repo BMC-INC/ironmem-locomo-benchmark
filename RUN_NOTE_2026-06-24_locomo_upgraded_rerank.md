@@ -34,13 +34,12 @@ $P scripts/funnel_probe.py --strategy hybrid --pool 50 --scored results/upg2_hyb
 | field | value |
 |---|---|
 | answerer / judge model | `gemini-2.5-flash` (Vertex AI) — see capacity note above |
-| Vertex project / region | `queueflow-sentinel` / `global` (ADC auth) |
+| Vertex project / region | `[redacted-project]` / `global` (ADC auth) |
 | eval concurrency | 8 |
 | IronMem | upgraded binary `657def4`, `--features local-onnx`, `http://localhost:37778` |
 | embedder | `bge-small-en-v1.5` (dim 384); store ≈ 19,692 memories / 47,365 observations |
 | dataset | `data/locomo10.json` — full LoCoMo-10, 10 conversations, 1,986 questions |
 | scope | categories 1–4 scored (1,540 Qs); 446 adversarial answered but **not** scored by the harness |
-| billing | first-party Gemini on the $300 free-trial credit |
 
 ## Output files
 | file | what |

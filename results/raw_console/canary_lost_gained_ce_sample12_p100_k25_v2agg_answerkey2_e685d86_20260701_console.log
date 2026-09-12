@@ -1,5 +1,5 @@
 IronMem LoCoMo — 2 conversation(s), 12 question(s) | answerer=gemini-2.5-pro 
-judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+judge=gemini-2.5-pro | vertex=[redacted-project]/us-west1 |
 strategies=['hybrid']
 server ok: 29659 memories, 61018 observations | embedder: bge-small-en-v1.5 (dim
 384)
@@ -13,5 +13,5 @@ eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━�
 │ overall   │    66.7% │ cats 1-4 │
 └───────────┴──────────┴──────────┘
 → results written to 
-/Users/kingjames/Projects/ironmem-locomo-benchmark/results/canary_lost_gained_ce
+~/Projects/ironmem-locomo-benchmark/results/canary_lost_gained_ce
 _sample12_p100_k25_v2agg_answerkey2_e685d86_20260701.json

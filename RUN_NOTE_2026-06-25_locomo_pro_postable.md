@@ -24,13 +24,12 @@ $P -m benchmark.run --strategy hybrid --skip-ingest --rerank --pool 50 --concurr
 | field | value |
 |---|---|
 | answerer / judge model | `gemini-2.5-pro` (Vertex AI) — both passes |
-| Vertex project / region | `queueflow-sentinel` / `us-west1` (ADC auth) |
+| Vertex project / region | `[redacted-project]` / `us-west1` (ADC auth) |
 | eval concurrency | 8 |
 | IronMem | upgraded binary `657def4`, `--features local-onnx`, `http://localhost:37778` |
 | embedder | `bge-small-en-v1.5` (dim 384); store ≈ 19,718 memories / 47,387 observations |
 | dataset | `data/locomo10.json` — full LoCoMo-10, 10 conversations, 1,986 questions |
 | scope | categories 1–4 scored (1,540 Qs); 446 adversarial answered but **not** scored |
-| billing | first-party Gemini Pro on the $300 free-trial credit |
 | run window | A′ 12:37–13:10 PDT, C′ 13:11–13:59 PDT, 2026-06-25 |
 
 ## Output files

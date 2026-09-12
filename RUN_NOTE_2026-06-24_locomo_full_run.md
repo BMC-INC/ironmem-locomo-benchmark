@@ -27,12 +27,12 @@ The headline IronMem × LoCoMo benchmark on Vertex AI Gemini 2.5 Pro: session st
 |---|---|
 | answerer model | `gemini-2.5-pro` (Vertex AI) |
 | judge model | `gemini-2.5-pro` (Vertex AI) |
-| Vertex project / region | `queueflow-sentinel` / `us-central1` (ADC auth) |
+| Vertex project / region | `[redacted-project]` / `us-central1` (ADC auth) |
 | eval concurrency | 10 |
 | IronMem server | `http://localhost:37778` · version `0.4.0` |
-| IronMem DB | `/Users/kingjames/.ironmem/mem.db` |
+| IronMem DB | `~/.ironmem/mem.db` |
 | embedder | `bge-small-en-v1.5` (dim 384) |
-| harness source | `/Users/kingjames/Projects/ironmem-locomo-benchmark` (relocated off iCloud Desktop) |
+| harness source | `~/Projects/ironmem-locomo-benchmark` (relocated off iCloud Desktop) |
 | git commit | **n/a** — working copy not under version control (recommend `git init` for future runs) |
 | dataset | `data/locomo10.json` — full LoCoMo-10, 10 conversations, 1986 questions |
 | scope | categories 1–4 scored; 446 adversarial answered but not scored (mem0-comparable) |

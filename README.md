@@ -22,7 +22,7 @@ Verified full-corpus record run using Gemini 2.5 Pro as answerer and judge, hybr
 | open_domain | 57.3% | 96 |
 | **Overall** | **72.4%** | **1,540 scored** |
 
-The raw console artifact for the record run is committed at `results/raw_console/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z_console.log`.
+Local paths and cloud project identifiers in console logs and run notes are redacted; benchmark measurements are unchanged. The console artifact for the record run is committed at `results/raw_console/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z_console.log`.
 
 ### Earlier locked baselines
 
@@ -147,7 +147,6 @@ For the exact July 1 record-run evidence, see:
 - `results/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z.json`
 - `results/raw_console/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z_console.log`
 - `RUN_NOTE_2026-07-01_gpu_episodic_reconstruction.md`
-- `HANDOFF_2026-07-01_record_run_regression_harness.md`
 
 ### Azure OpenAI / OpenAI backend
 
@@ -222,7 +221,6 @@ ironmem-locomo-benchmark/
     raw_console/        # Console logs for reproducibility
     regression/         # Regression and flip-analysis artifacts
   RUN_NOTE_*.md         # Per-run methodology notes
-  HANDOFF_*.md          # Experiment and regression handoffs
   SYNTHESIS_ANSWERER_SPEC.md
 ```
 

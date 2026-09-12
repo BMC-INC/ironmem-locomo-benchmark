@@ -10,7 +10,7 @@
 [Thu Jun 25 12:37:35 PDT 2026] Pro capacity check -> region: us-west1
 [Thu Jun 25 12:37:35 PDT 2026] PASS A' — Pro, rerank OFF (control)
 IronMem LoCoMo — 10 conversation(s), 1986 question(s) | answerer=gemini-2.5-pro 
-judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+judge=gemini-2.5-pro | vertex=[redacted-project]/us-west1 |
 strategies=['hybrid']
 server ok: 19718 memories, 47387 observations | embedder: bge-small-en-v1.5 (dim
 384)
@@ -27,12 +27,12 @@ eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━ 1
 │ overall     │    49.7% │                cats 1-4 │
 └─────────────┴──────────┴─────────────────────────┘
 → results written to 
-/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg3_PRO_A_rerankoff.
+~/Projects/ironmem-locomo-benchmark/results/upg3_PRO_A_rerankoff.
 json
 [Thu Jun 25 13:10:55 PDT 2026] PASS A' exit=0
 [Thu Jun 25 13:10:55 PDT 2026] PASS C' — Pro, rerank ON pool 50 (headline / postable)
 IronMem LoCoMo — 10 conversation(s), 1986 question(s) | answerer=gemini-2.5-pro 
-judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+judge=gemini-2.5-pro | vertex=[redacted-project]/us-west1 |
 strategies=['hybrid']
 server ok: 19718 memories, 47387 observations | embedder: bge-small-en-v1.5 (dim
 384)
@@ -49,7 +49,7 @@ eval:hybrid judge=gemini-2.5-pro ━━━━━━━━━━━━━━━ 1
 │ overall     │    60.9% │                cats 1-4 │
 └─────────────┴──────────┴─────────────────────────┘
 → results written to 
-/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg3_PRO_C_rerank_poo
+~/Projects/ironmem-locomo-benchmark/results/upg3_PRO_C_rerank_poo
 l50.json
 [Thu Jun 25 13:59:37 PDT 2026] PASS C' exit=0
 [Thu Jun 25 13:59:38 PDT 2026] result check: OK

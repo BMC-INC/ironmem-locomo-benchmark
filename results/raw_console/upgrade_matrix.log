@@ -19,7 +19,7 @@ TOTAL (APPLIED): {'scanned': 18120, 'groups': 1500, 'derived': 1971, 'sources_re
 [Thu Jun 25 21:31:28 PDT 2026] SCORE upg6_B_synth : --retrieve-limit 10
 IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
 answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
-vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+vertex=[redacted-project]/us-west1 | strategies=['hybrid']
 server ok: 28311 memories, 59725 observations | embedder: bge-small-en-v1.5 (dim
 384)
 eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 0:29:07 eta 0:00:00
@@ -35,12 +35,12 @@ eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/
 │ overall     │    55.1% │                cats 1-4 │
 └─────────────┴──────────┴─────────────────────────┘
 → results written to 
-/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg6_B_synth.json
+~/Projects/ironmem-locomo-benchmark/results/upg6_B_synth.json
 [Thu Jun 25 22:00:38 PDT 2026] upg6_B_synth exit=0
 [Thu Jun 25 22:00:38 PDT 2026] SCORE upg6_C_synth_mq3 : --retrieve-limit 10 --multi-query 3
 IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
 answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
-vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+vertex=[redacted-project]/us-west1 | strategies=['hybrid']
 server ok: 28311 memories, 59725 observations | embedder: bge-small-en-v1.5 (dim
 384)
 eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/1986 • 1:07:27 eta 0:00:00
@@ -56,11 +56,11 @@ eval:hybrid judge=gemini-2.5-flash ━━━━━━━━━━━━━ 1986/
 │ overall     │    56.4% │                cats 1-4 │
 └─────────────┴──────────┴─────────────────────────┘
 → results written to 
-/Users/kingjames/Projects/ironmem-locomo-benchmark/results/upg6_C_synth_mq3.json
+~/Projects/ironmem-locomo-benchmark/results/upg6_C_synth_mq3.json
 [Thu Jun 25 23:08:08 PDT 2026] upg6_C_synth_mq3 exit=0
 [Thu Jun 25 23:08:09 PDT 2026] SCORE upg6_D_synth_route : --retrieve-limit 10 --route
 IronMem LoCoMo — 10 conversation(s), 1986 question(s) | 
 answerer=gemini-2.5-flash judge=gemini-2.5-flash | 
-vertex=queueflow-sentinel/us-west1 | strategies=['hybrid']
+vertex=[redacted-project]/us-west1 | strategies=['hybrid']
 server ok: 28311 memories, 59725 observations | embedder: bge-small-en-v1.5 (dim
 384)

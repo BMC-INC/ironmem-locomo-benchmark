@@ -4,7 +4,7 @@ scheduled off-peak launcher armed Sat Jun 27 21:52:26 PDT 2026
 [23:20:46] === launching combined v3+synthesize run ===
 === [1/2] COMBINED: v3 + synthesize (Pro), p100/k25, full 1986 q ===
 IronMem LoCoMo — 10 conversation(s), 1986 question(s) | answerer=gemini-2.5-pro
-judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 |
+judge=gemini-2.5-pro | vertex=[redacted-project]/us-west1 |
 strategies=['hybrid']
 server ok: 28971 memories, 60123 observations | embedder: bge-small-en-v1.5 (dim
 384)

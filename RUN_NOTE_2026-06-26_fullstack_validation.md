@@ -5,7 +5,7 @@ Post-build validation of the deployed binary after the entire ROADMAP_TO_70 buil
 suite built same day). Same config as the 2×2 winner so it is apples-to-apples.
 
 Config: hybrid, --skip-ingest, --rerank, pool 100, retrieve-limit 25,
-answerer+judge = gemini-2.5-flash, vertex queueflow-sentinel/global, concurrency 8.
+answerer+judge = gemini-2.5-flash, vertex [redacted-project]/global, concurrency 8.
 1986 questions, 1540 scored (cats 1-4), 446 adversarial logged, **0 errors**, 72 min.
 
 ## Result

@@ -7,7 +7,7 @@ Gemini 2.5 **Pro** answerer + **Pro** judge, with **Flash** as the 2nd-judge
 agreement check.
 
 Config: hybrid, --skip-ingest, --rerank, pool 100, retrieve-limit 25,
-answerer+judge = gemini-2.5-pro, vertex queueflow-sentinel/**us-west1** (dodges the
+answerer+judge = gemini-2.5-pro, vertex [redacted-project]/**us-west1** (dodges the
 us-central1 Pro DSQ throttle), concurrency 8. Live store = 28,554 memories /
 59,859 observations. Rerank backend = LLM (cross-encoder built but not loaded —
 CPU; needs GPU at benchmark scale). 1986 questions, 1540 scored (cats 1-4), 446

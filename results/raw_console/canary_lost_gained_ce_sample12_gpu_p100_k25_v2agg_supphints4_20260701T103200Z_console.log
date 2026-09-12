@@ -1,5 +1,5 @@
 IronMem LoCoMo — 2 conversation(s), 12 question(s) | answerer=gemini-2.5-pro 
-judge=gemini-2.5-pro | vertex=queueflow-sentinel/us-west1 | 
+judge=gemini-2.5-pro | vertex=[redacted-project]/us-west1 |
 strategies=['hybrid']
 server ok: 29731 memories, 61031 observations | embedder: unknown
 rerank backend: cross_encoder | cross_encoder_ready=True
