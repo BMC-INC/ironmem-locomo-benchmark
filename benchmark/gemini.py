@@ -30,6 +30,11 @@ class GeminiClient:
     """Async Vertex AI Gemini client with bounded retry/backoff."""
 
     def __init__(self, cfg: Config) -> None:
+        if not cfg.vertex_project.strip():
+            raise ValueError(
+                "Vertex AI requires GOOGLE_CLOUD_PROJECT or --vertex-project; "
+                "select a project you are authorized to use."
+            )
         self._cfg = cfg
         self._client = genai.Client(
             vertexai=True,

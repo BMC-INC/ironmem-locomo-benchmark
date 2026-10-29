@@ -49,7 +49,7 @@ DEFAULT_IRONMEM_URL = "http://localhost:37778"
 #   gcloud auth application-default login --project=<project>
 DEFAULT_ANSWERER_MODEL = "gemini-2.5-pro"
 DEFAULT_JUDGE_MODEL = "gemini-2.5-pro"
-DEFAULT_VERTEX_PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT") or "queueflow-sentinel"
+DEFAULT_VERTEX_PROJECT = ""
 DEFAULT_VERTEX_LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION") or "us-central1"
 
 
@@ -60,9 +60,11 @@ class Config:
     ironmem_url: str = field(
         default_factory=lambda: os.environ.get("IRONMEM_URL", DEFAULT_IRONMEM_URL)
     )
-    # Vertex AI (Gemini). Project/location come from env or the queueflow-sentinel
-    # default; credentials are Application Default Credentials (no API key).
-    vertex_project: str = field(default_factory=lambda: DEFAULT_VERTEX_PROJECT)
+    # Select the caller's Vertex project explicitly. No organization-specific
+    # billing project is used as a fallback.
+    vertex_project: str = field(
+        default_factory=lambda: os.environ.get("GOOGLE_CLOUD_PROJECT") or DEFAULT_VERTEX_PROJECT
+    )
     vertex_location: str = field(default_factory=lambda: DEFAULT_VERTEX_LOCATION)
     answerer_model: str = DEFAULT_ANSWERER_MODEL
     judge_model: str = DEFAULT_JUDGE_MODEL

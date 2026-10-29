@@ -5,6 +5,26 @@ from benchmark.config import Config
 
 
 class LlmFactoryTests(unittest.TestCase):
+    def test_vertex_requires_an_explicit_project_before_creating_a_client(self):
+        from benchmark.llm import create_llm_client
+
+        with patch.dict("os.environ", {}, clear=True):
+            cfg = Config()
+        self.assertEqual(cfg.vertex_project, "")
+        with patch("benchmark.gemini.genai.Client") as client:
+            with self.assertRaisesRegex(ValueError, "GOOGLE_CLOUD_PROJECT"):
+                create_llm_client(cfg, "vertex")
+            client.assert_not_called()
+
+    def test_vertex_uses_the_callers_environment_project(self):
+        from benchmark.llm import create_llm_client
+
+        with patch.dict("os.environ", {"GOOGLE_CLOUD_PROJECT": "benchmark-fixture"}, clear=True):
+            cfg = Config()
+        with patch("benchmark.gemini.genai.Client") as client:
+            create_llm_client(cfg, "vertex")
+            self.assertEqual(client.call_args.kwargs["project"], "benchmark-fixture")
+
     def test_openai_backend_maps_gemini_defaults_to_explicit_deployments(self):
         from benchmark.llm import configure_models
 

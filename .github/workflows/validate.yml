@@ -1,0 +1,26 @@
+name: Validate benchmark
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install harness dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Test clients, configuration, and artifact verification
+        run: python -m unittest discover -s tests -v
+      - name: Verify committed headline arithmetic and coverage
+        run: >-
+          python scripts/verify_result.py
+          results/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z.json
+          --expected-questions 1986 --expected-scored 1540
