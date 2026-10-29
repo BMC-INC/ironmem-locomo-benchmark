@@ -1,8 +1,35 @@
 # IronMem LoCoMo Benchmark
 
-Reproducible evaluation of [IronMem](https://github.com/BMC-INC/Iron-mem) on the [LoCoMo](https://github.com/snap-research/locomo) long-term conversational memory benchmark (Maharana et al., ACL 2024).
+Evaluation harness and published result artifacts for [IronMem](https://github.com/BMC-INC/Iron-mem) on the [LoCoMo](https://github.com/snap-research/locomo) long-term conversational memory benchmark (Maharana et al., ACL 2024).
 
-IronMem is the only memory system where every recalled memory carries writer identity, trust tier, classification, and a tamper-evident ledger entry.
+This repository is the research and evaluation companion to the IronMem runtime.
+It contains the runner, per-question results, comparison baselines, and methodology
+notes. It is intended for developers evaluating memory retrieval and for readers
+checking the evidence behind IronMem's published claims.
+
+[![Validation](https://github.com/BMC-INC/ironmem-locomo-benchmark/actions/workflows/validate.yml/badge.svg)](https://github.com/BMC-INC/ironmem-locomo-benchmark/actions/workflows/validate.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+
+[Verify a result](#verify-the-published-result-offline) · [Run an evaluation](#reproducing) · [Methodology](#methodology) · [Limitations](#what-the-headline-does-not-claim)
+
+## Verify the published result offline
+
+Python 3.11+ is sufficient to check the headline artifact. This does not install
+IronMem, access a memory store, use credentials, or call a model:
+
+```sh
+git clone --depth 1 https://github.com/BMC-INC/ironmem-locomo-benchmark.git
+cd ironmem-locomo-benchmark
+python3 scripts/verify_result.py \
+  results/full_gpu_p100_k25_v2agg_normhints9_20260701T233607Z.json \
+  --expected-questions 1986 --expected-scored 1540
+```
+
+Expected: **1,986 recorded questions, 1,540 scored, 1,115 correct, 446 excluded,
+and 0.724 overall**. The verifier checks unique question IDs, categories, coverage,
+error-free completion, binary scores, and recomputed aggregates. It prints the
+artifact's SHA-256 so the input is identifiable. Arithmetic verification does
+not independently validate the judge's answers or reproduce retrieval.
 
 ## Results
 
@@ -105,20 +132,31 @@ IronMem tracks these properties alongside retrieval. Benchmark accuracy therefor
 ### Prerequisites
 
 - Python 3.11+
-- Running IronMem server (`ironmem serve`, default port 37778)
+- Running IronMem REST server (`ironmem server`, default port 37778). The `ironmem serve` command starts MCP transport instead.
 - One supported LLM backend: Vertex AI with Google Cloud ADC (default), Azure OpenAI with Managed Identity, or public OpenAI with an API key
 - LoCoMo dataset (`data/locomo10.json` from [snap-research/locomo](https://github.com/snap-research/locomo))
 
 ### Setup
 
 ```bash
-git clone https://github.com/BMC-INC/ironmem-locomo-benchmark.git
+git clone --depth 1 https://github.com/BMC-INC/ironmem-locomo-benchmark.git
 cd ironmem-locomo-benchmark
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Ingest (first time only)
+Configure the backend using [.env.example](.env.example). For Vertex, select your
+own authorized `GOOGLE_CLOUD_PROJECT` (or pass `--vertex-project`) and configure
+Application Default Credentials. There is no default billing project.
+
+Use a dedicated IronMem database for evaluation. Ingest writes benchmark
+conversations to that server; a different project prefix alone is not a separate
+database. See IronMem's [isolated trial instructions](https://github.com/BMC-INC/Iron-mem/blob/main/docs/installation-and-recovery.md#isolate-a-trial).
+The provider-backed commands below make paid model calls. In this harness,
+`--dry-run` means a smaller evaluation and can still call models; use the offline
+verifier above when you want no model calls.
+
+### Ingest and evaluate (first run)
 
 ```bash
 python -m benchmark.run --strategy hybrid --concurrency 8 \
@@ -127,10 +165,10 @@ python -m benchmark.run --strategy hybrid --concurrency 8 \
 
 ### Run evaluation
 
-The harness exposes the retrieval, answer-prompt, synthesis, reranking, and normalization controls used throughout the committed run history. Reproduce a locked baseline first, then compare experimental configurations against the same corpus and judge.
+The harness exposes the retrieval, answer-prompt, synthesis, reranking, and normalization controls used throughout the committed run history. Establish a baseline on your own isolated corpus, then compare configurations using the same corpus and judge. The saved historical results alone do not recreate the live database state used in July 2026.
 
 ```bash
-# Reproduce the locked V2 baseline: Pro answerer + Pro judge, pool 100, retrieve-limit 25
+# Evaluate the V2 baseline configuration against your already-ingested corpus
 python -m benchmark.run --strategy hybrid --skip-ingest \
   --pool 100 --retrieve-limit 25 --concurrency 8 \
   --answer-prompt v2 --vertex-location us-west1 \
@@ -236,21 +274,41 @@ ironmem-locomo-benchmark/
 | Regression/canary harness | Evaluation reliability | Built | Tracks rescued vs regressed questions before accepting broader changes |
 | open_domain | Extraction/source constrained | Lower priority | Some gold answers are not recoverable from source transcript evidence |
 
-## Comparison with other systems
+## Comparing systems fairly
 
-| System | Benchmark | Overall | multi_hop | temporal | Governed |
-|---|---|---:|---:|---:|---|
-| **IronMem** | LoCoMo (Gemini 2.5 Pro judge) | **72.4%** | **58.2%** | **77.0%** | **Yes** |
-| Mem0 | LoCoMo (gpt-4o-mini judge) | 75.78%* | 46.88%* | 85.05%* | No |
-| Supermemory | LongMemEval (recall metric) | 95% R@15* | -- | 91%* | No |
-
-\* Self-reported by those projects on different judge models and/or a different benchmark. These numbers are **not directly comparable**. A clean comparison requires running each system on the same corpus, question set, answerer, judge, scoring protocol, and retrieval constraints. IronMem publishes its harness and committed result artifacts so those comparisons can be reproduced rather than inferred from cross-paper headline numbers.
+Compare systems on the same corpus, question set, answerer, judge, scoring
+protocol, retrieval budget, and preprocessing. Scores from different benchmarks
+or judge models do not establish a ranking. This repository publishes IronMem's
+own evidence; it does not establish that other systems lack governance features.
 
 ## What the headline does not claim
 
 The 72.4% result is a LoCoMo result under the configuration described above. It is not claimed to be directly comparable to scores produced with different answerers, judges, benchmarks, retrieval budgets, or benchmark-specific preprocessing. The repository keeps earlier baselines and regression artifacts specifically so improvements can be examined against known configurations rather than only through a single headline number.
 
+The record run includes benchmark-specific normalized-hint supplements and
+configuration tuning. It is not a held-out demonstration of general coding
+accuracy. Exact historical reruns also depend on the original memory-store state,
+model availability, and provider behavior; this repository does not include an
+export of that live database. Use the stored per-question artifacts for auditing
+and fresh, matched runs for new comparisons.
+
 Likewise, LoCoMo does not test IronMem's full governed-memory surface: source reversibility, provenance lineage, contradiction sets, inference quarantine, valid-time semantics, purpose-bound influence controls, consent/retention policy, and tamper-evident mutation history require separate evaluations.
+
+## Development and validation
+
+After installing the dependencies:
+
+```sh
+python -m unittest discover -s tests -v
+python -m benchmark.run --help
+```
+
+[CI](https://github.com/BMC-INC/ironmem-locomo-benchmark/actions/workflows/validate.yml)
+runs mocked client/configuration tests and verifies the committed headline
+artifact. It does not launch paid evaluations or certify benchmark quality.
+Report reproducible harness problems in [issues](https://github.com/BMC-INC/ironmem-locomo-benchmark/issues),
+including the commit, backend, and redacted configuration. Keep credentials,
+personal memory stores, and private evaluation data out of commits.
 
 ## Citation
 
